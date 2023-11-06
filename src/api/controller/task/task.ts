@@ -1,0 +1,377 @@
+import { BaseHttpController, controller, httpPost, httpPut, httpGet, httpDelete } from 'inversify-express-utils';
+import { inject } from 'inversify';
+import { celebrate } from 'celebrate';
+import { TaskService } from '../../../service/task/task';
+import { Query } from '../../../plugin/types';
+import { Auth0Middleware } from '../../middleware/auth';
+import { UserService } from '../../../service/user/user';
+import { UnitService } from '../../../service/unit/unit';
+import { SIGNALS } from '../../../config/signal';
+import { joi } from '../../../util/joi';
+
+@controller('/v1/task', Auth0Middleware)
+export class TaskController extends BaseHttpController {
+  @inject(TaskService)
+  private taskService: TaskService;
+
+  @inject(UserService)
+  private userService: UserService;
+
+  @inject(UnitService)
+  private unitService: UnitService;
+
+  @httpPost(
+    '/',
+    celebrate({
+      body: joi.object({
+        signal: joi.string().trim().lowercase().required(),
+      }),
+    }),
+  )
+  async create(): Promise<void> {
+    const {
+      request: {
+        body: { signal },
+      },
+      user: { details: userId },
+    } = this.httpContext;
+
+    const user = await this.userService.findById(userId);
+
+    const unit = await user.findReportingUnit(signal);
+
+    const task = await this.taskService.create({
+      unit: unit._id,
+      user: userId,
+      signal,
+      via: 'internet',
+      state: unit.state,
+    });
+
+    this.httpContext.response.json({ task });
+  }
+
+  @httpPost(
+    '/pmebs/:unitId',
+    celebrate({
+      body: joi.object({
+        signal: joi.string().trim().lowercase().required(),
+        dateDetected: joi.date().iso(),
+        description: joi.string(),
+        source: joi.string(),
+        locality: joi.string(),
+        dateReported: joi.date().iso(),
+      }),
+    }),
+  )
+  async report(): Promise<void> {
+    const {
+      user: { details: user },
+      request: {
+        body: { signal, dateDetected, description, source, locality, dateReported },
+        params: { unitId: unit },
+      },
+    } = this.httpContext;
+
+    const unit_ = await this.unitService.findById(unit);
+
+    if (unit_.type !== 'Subcounty') throw new Error('The unit passed is not a subcounty');
+
+    const task = await this.taskService.create({
+      signal,
+      user,
+      unit,
+      'pmebs.reportForm': {
+        user,
+        dateDetected,
+        description,
+        source,
+        unit,
+        locality,
+        dateReported,
+        via: 'internet',
+      },
+      via: 'internet',
+      state: unit_.state,
+    });
+
+    this.httpContext.response.json({ task });
+  }
+
+  @httpPut(
+    '/:taskId',
+    celebrate({
+      body: joi.object({
+        _status: joi.string(),
+      }),
+    }),
+  )
+  async update(): Promise<void> {
+    const {
+      request: {
+        body: { _status },
+        params: { taskId },
+      },
+    } = this.httpContext;
+
+    const task = await this.taskService.update(taskId, {
+      _status,
+    });
+
+    this.httpContext.response.json({ task });
+  }
+
+  @httpGet(
+    '/',
+    celebrate({
+      query: joi.object({
+        taskId: joi.string(),
+        q: joi.string(),
+        userId: joi.string(),
+        unitId: joi.string(),
+        sort: joi.string(),
+        page: joi.number(),
+        key: joi.string(),
+        type: joi.string().allow('todo', 'history'),
+        status: joi.string(),
+        limit: joi.number(),
+        _status: joi.string(),
+        state: joi.string(),
+      }),
+    }),
+  )
+  async retrieve(): Promise<void> {
+    const { taskId } = this.httpContext.request.query as {
+      taskId: string;
+    };
+
+    if (taskId) {
+      const task = await this.taskService.findById(taskId);
+
+      this.httpContext.response.json({ task });
+
+      return;
+    }
+
+    const { sort, page, limit, q, _status, userId, key, unitId, type, status, state } = (this.httpContext.request
+      .query as unknown) as Record<string, any>;
+
+    let query: Query = {};
+
+    if (_status) query = { ...query, ...{ _status } };
+
+    if (status) query = { ...query, ...{ status } };
+
+    if (state) query = { ...query, ...{ state } };
+
+    if (userId) {
+      const _user = await this.userService.findById(userId);
+
+      if (type === 'todo') {
+        const roles = await _user.roles('active');
+
+        if (!roles.length) throw new Error('You do not have any roles');
+
+        const _unit = await this.unitService.findById(roles[0].unit);
+
+        switch (_unit.type) {
+          case 'Community unit':
+            switch (roles[0].spot) {
+              case 'AHA':
+              case 'CHA':
+                query = {
+                  ...query,
+                  ...{
+                    unit: { $in: roles.map((child) => child.unit) },
+                    signal: { $in: SIGNALS.CEBS },
+                    $or: [{ cebs: { $exists: false } }, { 'cebs.verificationForm': { $exists: false } }],
+                  },
+                };
+                break;
+              default:
+                throw new Error('You do not have any tasks');
+            }
+            break;
+          case 'Health facility':
+            switch (roles[0].spot) {
+              case 'SFP':
+                query = {
+                  ...query,
+                  ...{
+                    unit: { $in: roles.map((child) => child.unit) },
+                    signal: { $in: SIGNALS.HEBS },
+                    $or: [{ hebs: { $exists: false } }, { 'hebs.verificationForm': { $exists: false } }],
+                  },
+                };
+                break;
+              default:
+                throw new Error('You do not have any tasks');
+            }
+            break;
+          case 'Subcounty':
+            let signals: string[] = [];
+            const or: any[] = [{ unit: roles[0].unit }];
+
+            for (const role of roles) {
+              switch (role.spot) {
+                case 'CEBS':
+                  signals = [...signals, ...SIGNALS.CEBS];
+                  or.push({ 'cebs.verificationForm': { $exists: true } });
+
+                  break;
+                case 'HEBS':
+                  signals = [...signals, ...SIGNALS.HEBS];
+                  or.push({ 'hebs.verificationForm': { $exists: true } });
+
+                  break;
+                case 'LEBS':
+                  signals = [...signals, ...SIGNALS.LEBS];
+                  or.push({ 'lebs.verificationForm': { $exists: true } });
+
+                  break;
+                case 'VEBS':
+                  signals = [...signals, ...SIGNALS.VEBS];
+                  or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                  break;
+                case 'EBS':
+                  signals = [...signals, ...SIGNALS.CEBS, ...SIGNALS.HEBS, ...SIGNALS.LEBS, ...SIGNALS.VEBS];
+                  or.push({ 'cebs.verificationForm': { $exists: true } });
+                  or.push({ 'hebs.verificationForm': { $exists: true } });
+                  or.push({ 'lebs.verificationForm': { $exists: true } });
+                  or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                  break;
+              }
+            }
+
+            if (or.length === 1) throw new Error('You do not have any roles');
+
+            query = {
+              ...query,
+              ...{
+                units: roles[0].unit,
+                signal: { $in: signals },
+                $or: or,
+              },
+            };
+
+            break;
+          default:
+            throw new Error('You do not have any tasks');
+        }
+
+        query = {
+          ...query,
+          ...{
+            status: 'pending',
+          },
+        };
+      } else if (type === 'history') {
+        const { _id: user } = _user;
+
+        query = {
+          ...query,
+          ...{
+            $or: [
+              { user },
+              { 'pmebs.reportForm.user': user },
+              { 'pmebs.requestForm.user': user },
+              { 'cebs.verificationForm.user': user },
+              { 'cebs.investigationForm.user': user },
+              { 'cebs.responseForm.user': user },
+              { 'cebs.escalationForm.user': user },
+              { 'vebs.verificationForm.user': user },
+              { 'vebs.investigationForm.user': user },
+              { 'vebs.responseForm.user': user },
+              { 'vebs.escalationForm.user': user },
+              { 'hebs.verificationForm.user': user },
+              { 'hebs.investigationForm.user': user },
+              { 'hebs.responseForm.user': user },
+              { 'hebs.escalationForm.user': user },
+              { 'lebs.verificationForm.user': user },
+              { 'lebs.investigationForm.user': user },
+              { 'lebs.responseForm.user': user },
+              { 'lebs.escalationForm.user': user },
+            ],
+          },
+        };
+      }
+    }
+
+    if (unitId) {
+      const {
+        user: { details: _userId },
+      } = this.httpContext;
+      await (await this.userService.findById(_userId)).can({ access: 'manage-unit', resource: unitId });
+
+      query = { ...query, ...{ units: unitId } };
+
+      if (type === 'todo')
+        query = {
+          ...query,
+          ...{
+            status: 'pending',
+          },
+        };
+      else if (type === 'history')
+        query = {
+          ...query,
+          ...{
+            status: 'completed',
+          },
+        };
+    }
+
+    const taskPage = await this.taskService.page(query, {
+      q,
+      sort,
+      page,
+      limit,
+      key,
+      populate: [
+        { path: 'user' },
+        { path: 'unit' },
+        { path: 'pmebs.reportForm.user' },
+        { path: 'pmebs.requestForm.user' },
+        { path: 'cebs.verificationForm.user' },
+        { path: 'cebs.investigationForm.user' },
+        { path: 'cebs.responseForm.user' },
+        { path: 'cebs.escalationForm.user' },
+        { path: 'vebs.verificationForm.user' },
+        { path: 'vebs.investigationForm.user' },
+        { path: 'vebs.responseForm.user' },
+        { path: 'vebs.escalationForm.user' },
+        { path: 'hebs.verificationForm.user' },
+        { path: 'hebs.investigationForm.user' },
+        { path: 'hebs.responseForm.user' },
+        { path: 'hebs.escalationForm.user' },
+        { path: 'lebs.verificationForm.user' },
+        { path: 'lebs.investigationForm.user' },
+        { path: 'lebs.responseForm.user' },
+        { path: 'lebs.escalationForm.user' },
+      ],
+    });
+
+    this.httpContext.response.json({ taskPage });
+  }
+
+  @httpDelete(
+    '/',
+    Auth0Middleware,
+    celebrate({
+      query: joi.object({
+        taskId: joi.string(),
+      }),
+    }),
+  )
+  async remove(): Promise<void> {
+    const { taskId } = this.httpContext.request.query as {
+      taskId: string;
+    };
+
+    const task = await this.taskService.delete(taskId);
+
+    this.httpContext.response.json({ task });
+  }
+}
