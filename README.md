@@ -78,6 +78,23 @@ PROJECT_OTP_LENGTH=? // Length of OTP
 PROJECT_OTP_EXPIRY=? // Duration before OTP expires
 PROJECT_OTP_CHARACTER_SET=? // Characters used to generate OTP eg '0123456789abcdefghijklmnopqrstuvwxyz', NOTE: To prevent bruteforce use alphanumeric PROJECT_OTP_CHARACTER_SET, short PROJECT_OPT_EXPIRY and long PROJECT_OTP_LENGTH
 ```
+Add firebase.json
+
+```
+{
+  "type": "service_account",
+  "project_id": "mdharura-ebs",
+  "private_key_id": ?, // Your PRIVATE_KEY_ID
+  "private_key": ?, //Firebase PRIVATE_KEY
+  "client_email": ?, // Firebase email addess
+  "client_id": ?, // Firebase Client ID
+  "auth_uri": ?, // Firebase AUTHORIZATION URI
+  "token_uri": ?, // Firebase TOKEN URI
+  "auth_provider_x509_cert_url": ? , // Firebase Certificate URL
+  "client_x509_cert_url": ? // Firebase Client Certificate URL
+}
+
+```
 # PRODUCTION
 
 Add ecosystem.config.js file (Read more from PM2 documentation)

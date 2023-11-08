@@ -6,3 +6,5 @@ ecosystem.config.js
 *.DS_Store
 .history
 files
+firebase.json
+.env.copy
