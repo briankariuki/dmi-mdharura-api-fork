@@ -2,7 +2,7 @@
   "type": "service_account",
   "project_id": "mdharura-ebs",
   "private_key_id": "87ccad8593d3669199d9312614c792c9d651b6e7",
-  "private_key": $FIREBASE_KEY, //Setup this Private Key in env file.
+  "private_key": '<FIREBASE_KEY>',
   "client_email": "firebase-adminsdk-2pb8r@mdharura-ebs.iam.gserviceaccount.com",
   "client_id": "109433325127970393568",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
