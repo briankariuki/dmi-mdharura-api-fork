@@ -30,6 +30,9 @@ export type InvestigationForm = {
   isEventSettingPromotingSpread: string;
   additionalInformation: string;
   riskClassification: string;
+  isEventInfectious: string;
+  eventCategories: string[];
+  systemsAffectedByEvent: string[];
   responseActivities: string[];
   dateSCMOHInformed: Date;
   via: 'internet' | 'sms';

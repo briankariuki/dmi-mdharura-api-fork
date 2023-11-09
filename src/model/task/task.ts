@@ -96,6 +96,9 @@ export type Task = {
       measureVentilation: string;
       additionalInformation: string;
       riskClassification: string;
+      isEventInfectious: string;
+      eventCategories: string[];
+      systemsAffectedByEvent: string[];
       responseActivities: string[];
       symptoms: string[];
       symptomsOther: string;
@@ -371,6 +374,9 @@ const taskSchema = new Schema(
                 measureVentilation: { type: String },
                 additionalInformation: { type: String },
                 riskClassification: { type: String },
+                isEventInfectious: { type: String },
+                eventCategories: { type: [String] },
+                systemsAffectedByEvent: { type: [String] },
                 responseActivities: { type: [String] },
                 symptoms: { type: [String] },
                 symptomsOther: { type: String },
