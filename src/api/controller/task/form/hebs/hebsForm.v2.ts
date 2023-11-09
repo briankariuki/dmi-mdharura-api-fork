@@ -11,8 +11,8 @@ import {
   verificationFormJoi,
 } from '../../../../../util/form.joi';
 
-@controller('/v2/task/:signalId/cebs', Auth0Middleware)
-export class CebsFormControllerV2 extends BaseHttpController {
+@controller('/v2/task/:signalId/hebs', Auth0Middleware)
+export class HebsFormControllerV2 extends BaseHttpController {
   @inject(TaskService)
   private taskService: TaskService;
 
@@ -33,7 +33,7 @@ export class CebsFormControllerV2 extends BaseHttpController {
 
     let task = await this.taskService.findOne({ signalId });
 
-    if (!SIGNALS.CEBS.includes(task.signal))
+    if (!SIGNALS.HEBS.includes(task.signal))
       throw new Error(
         `Please submit ${task.getType()} verification form (Signal ID: ${task.signalId}, Signal Code: ${
           task.signal
@@ -41,7 +41,7 @@ export class CebsFormControllerV2 extends BaseHttpController {
       );
 
     task = await this.taskService.update(task._id, {
-      'cebs.verificationForm': {
+      'hebs.verificationForm': {
         ...{
           user,
           via: 'internet',
@@ -70,18 +70,18 @@ export class CebsFormControllerV2 extends BaseHttpController {
 
     let task = await this.taskService.findOne({ signalId });
 
-    if (!SIGNALS.CEBS.includes(task.signal))
+    if (!SIGNALS.HEBS.includes(task.signal))
       throw new Error(
         `Please submit ${task.getType()} risk assessment form (Signal ID: ${task.signalId}, Signal Code: ${
           task.signal
         } is for ${task.getType()})`,
       );
 
-    if (!task.cebs || !task.cebs.verificationForm)
+    if (!task.hebs || !task.hebs.verificationForm)
       throw new Error('Please submit verification form before submitting risk assessment form');
 
     task = await this.taskService.update(task._id, {
-      'cebs.investigationForm': {
+      'hebs.investigationForm': {
         ...{
           user,
           via: 'internet',
@@ -110,18 +110,18 @@ export class CebsFormControllerV2 extends BaseHttpController {
 
     let task = await this.taskService.findOne({ signalId });
 
-    if (!SIGNALS.CEBS.includes(task.signal))
+    if (!SIGNALS.HEBS.includes(task.signal))
       throw new Error(
         `Please submit ${task.getType()} response form (Signal ID: ${task.signalId}, Signal Code: ${
           task.signal
         } is for ${task.getType()})`,
       );
 
-    if (!task.cebs || !task.cebs.investigationForm)
+    if (!task.hebs || !task.hebs.investigationForm)
       throw new Error('Please submit risk assessment form before submitting response form');
 
     task = await this.taskService.update(task._id, {
-      'cebs.responseForm': {
+      'hebs.responseForm': {
         ...{
           user,
           via: 'internet',
@@ -150,18 +150,18 @@ export class CebsFormControllerV2 extends BaseHttpController {
 
     let task = await this.taskService.findOne({ signalId });
 
-    if (!SIGNALS.CEBS.includes(task.signal))
+    if (!SIGNALS.HEBS.includes(task.signal))
       throw new Error(
         `Please submit ${task.getType()} escalation form (Signal ID: ${task.signalId}, Signal Code: ${
           task.signal
         } is for ${task.getType()})`,
       );
 
-    if (!task.cebs || !task.cebs.responseForm)
+    if (!task.hebs || !task.hebs.responseForm)
       throw new Error('Please submit response form before submitting escalation form');
 
     task = await this.taskService.update(task._id, {
-      'cebs.escalationForm': {
+      'hebs.escalationForm': {
         ...{
           user,
           via: 'internet',
