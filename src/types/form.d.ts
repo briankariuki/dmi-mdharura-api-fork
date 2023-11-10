@@ -73,3 +73,12 @@ export type VerificationForm = {
   via: 'internet' | 'sms';
   spot?: Role['spot'];
 };
+
+export type SummaryForm = {
+  user: string;
+  eventStatus: string;
+  escalatedTo: string;
+  cause: string;
+  via: 'internet' | 'sms';
+  spot?: Role['spot'];
+};

@@ -8,12 +8,13 @@ import { RoleModel, Role } from '../user/role';
 import { UserDocument } from '../user/user';
 import { UnitModel } from '../unit/unit';
 import { TASK_REMINDER_ESCALATE_AFTER, TASK_REMINDER_UNITS } from '../../config/task';
-import { VerificationForm, InvestigationForm, ResponseForm, EscalationForm } from '../../types/form';
+import { VerificationForm, InvestigationForm, ResponseForm, EscalationForm, SummaryForm } from '../../types/form';
 import {
   verificationFormSchema,
   investigationFormSchema,
   responseFormSchema,
   escalationFormSchema,
+  summaryFormSchema,
 } from '../../util/form.schema';
 
 export type Task = {
@@ -51,18 +52,21 @@ export type Task = {
     investigationForm?: InvestigationForm;
     responseForm?: ResponseForm;
     escalationForm?: EscalationForm;
+    summaryForm?: SummaryForm;
   };
   cebs?: {
     verificationForm?: VerificationForm;
     investigationForm?: InvestigationForm;
     responseForm?: ResponseForm;
     escalationForm?: EscalationForm;
+    summaryForm?: SummaryForm;
   };
   hebs?: {
     verificationForm?: VerificationForm;
     investigationForm?: InvestigationForm;
     responseForm?: ResponseForm;
     escalationForm?: EscalationForm;
+    summaryForm?: SummaryForm;
   };
   lebs?: {
     verificationForm?: {
@@ -144,6 +148,7 @@ export type Task = {
       spot?: Role['spot'];
     };
     escalationForm?: EscalationForm;
+    summaryForm?: SummaryForm;
   };
   status: 'pending' | 'completed';
   state: 'test' | 'live';
@@ -162,17 +167,22 @@ export type TaskDocument = DefaultDocument &
         | 'vebs-investigation'
         | 'vebs-response'
         | 'vebs-escalation'
+        | 'vebs-summary'
         | 'cebs-verification'
         | 'cebs-investigation'
         | 'cebs-response'
         | 'cebs-escalation'
+        | 'cebs-summary'
         | 'hebs-verification'
         | 'hebs-investigation'
         | 'hebs-response'
         | 'hebs-escalation'
+        | 'hebs-summary'
         | 'lebs-verification'
         | 'lebs-investigation'
-        | 'lebs-response';
+        | 'lebs-response'
+        | 'lebs-summary';
+
       users: UserDocument[];
     }>;
     getType(): 'CEBS' | 'HEBS' | 'VEBS' | 'LEBS';
@@ -285,6 +295,7 @@ const taskSchema = new Schema(
           investigationForm: investigationFormSchema,
           responseForm: responseFormSchema,
           escalationForm: escalationFormSchema,
+          summaryForm: summaryFormSchema,
         },
         { timestamps: true },
       ),
@@ -297,6 +308,7 @@ const taskSchema = new Schema(
           investigationForm: investigationFormSchema,
           responseForm: responseFormSchema,
           escalationForm: escalationFormSchema,
+          summaryForm: summaryFormSchema,
         },
         { timestamps: true },
       ),
@@ -309,6 +321,7 @@ const taskSchema = new Schema(
           investigationForm: investigationFormSchema,
           responseForm: responseFormSchema,
           escalationForm: escalationFormSchema,
+          summaryForm: summaryFormSchema,
         },
         { timestamps: true },
       ),
@@ -468,6 +481,7 @@ const taskSchema = new Schema(
             ),
           },
           escalationForm: escalationFormSchema,
+          summaryForm: summaryFormSchema,
         },
         { timestamps: true },
       ),
@@ -724,17 +738,21 @@ async function toInform(): Promise<{
     | 'vebs-investigation'
     | 'vebs-response'
     | 'vebs-escalation'
+    | 'vebs-summary'
     | 'cebs-verification'
     | 'cebs-investigation'
     | 'cebs-response'
     | 'cebs-escalation'
+    | 'cebs-summary'
     | 'hebs-verification'
     | 'hebs-investigation'
     | 'hebs-response'
     | 'hebs-escalation'
+    | 'hebs-summary'
     | 'lebs-verification'
     | 'lebs-investigation'
-    | 'lebs-response';
+    | 'lebs-response'
+    | 'lebs-summary';
   users: UserDocument[];
 }> {
   const doc = this as TaskDocument;

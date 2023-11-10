@@ -4,7 +4,7 @@ import { celebrate } from 'celebrate';
 import { TaskService } from '../../../../../service/task/task';
 import { Auth0Middleware } from '../../../../middleware/auth';
 import { UserService } from '../../../../../service/user/user';
-import { escalationFormJoi } from '../../../../../util/form.joi';
+import { escalationFormJoi, summaryFormJoi } from '../../../../../util/form.joi';
 import { joi } from '../../../../../util/joi';
 import { SIGNALS } from '../../../../../config/signal';
 
@@ -116,6 +116,48 @@ export class LebsFormControllerV3 extends BaseHttpController {
 
     task = await this.taskService.update(task._id, {
       'lebs.investigationForm': {
+        ...{
+          user,
+          via: 'internet',
+        },
+        ...body,
+      },
+    });
+
+    this.httpContext.response.json({ task });
+  }
+
+  @httpPut(
+    '/summary',
+    celebrate({
+      body: summaryFormJoi,
+    }),
+  )
+  async summary(): Promise<void> {
+    const {
+      user: { details: user },
+      request: {
+        body,
+        params: { signalId },
+      },
+    } = this.httpContext;
+
+    let task = await this.taskService.findOne({ signalId });
+
+    // await (await this.userService.findById(user)).can({ access: 'task-response', resource: task._id });
+
+    if (!SIGNALS.LEBS.includes(task.signal))
+      throw new Error(
+        `Please submit ${task.getType()} summary form (Signal ID: ${task.signalId}, Signal Code: ${
+          task.signal
+        } is for ${task.getType()})`,
+      );
+
+    if (!task.lebs || !task.lebs.investigationForm)
+      throw new Error('Please submit risk assessment form before submitting summary form');
+
+    task = await this.taskService.update(task._id, {
+      'lebs.summaryForm': {
         ...{
           user,
           via: 'internet',

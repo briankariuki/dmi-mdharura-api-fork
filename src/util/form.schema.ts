@@ -164,3 +164,34 @@ export const verificationFormSchema = new Schema(
   },
   { timestamps: true },
 );
+
+export const summaryFormSchema = new Schema(
+  {
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    cause: { type: String },
+    escalatedTo: { type: String },
+    eventStatus: { type: String },
+    via: { type: String, default: 'internet', enum: ['internet', 'sms'] },
+    spot: {
+      type: String,
+      enum: [
+        'HEBS',
+        'LEBS',
+        'CEBS',
+        'EBS',
+        'AHA',
+        'CHA',
+        'CHV',
+        'VEBS',
+        'VET',
+        'SFP',
+        'HCW',
+        'PMEBS',
+        'PEBS/MEBS',
+        'CDR',
+        'VIEWER',
+      ],
+    },
+  },
+  { timestamps: true },
+);
