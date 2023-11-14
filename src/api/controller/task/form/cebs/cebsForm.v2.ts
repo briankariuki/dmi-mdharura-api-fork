@@ -8,6 +8,7 @@ import {
   escalationFormJoi,
   investigationFormJoiV2,
   responseFormJoi,
+  summaryFormJoi,
   verificationFormJoi,
 } from '../../../../../util/form.joi';
 
@@ -122,6 +123,46 @@ export class CebsFormControllerV2 extends BaseHttpController {
 
     task = await this.taskService.update(task._id, {
       'cebs.responseForm': {
+        ...{
+          user,
+          via: 'internet',
+        },
+        ...body,
+      },
+    });
+
+    this.httpContext.response.json({ task });
+  }
+
+  @httpPut(
+    '/summary',
+    celebrate({
+      body: summaryFormJoi,
+    }),
+  )
+  async summary(): Promise<void> {
+    const {
+      user: { details: user },
+      request: {
+        body,
+        params: { signalId },
+      },
+    } = this.httpContext;
+
+    let task = await this.taskService.findOne({ signalId });
+
+    if (!SIGNALS.CEBS.includes(task.signal))
+      throw new Error(
+        `Please submit ${task.getType()} response form (Signal ID: ${task.signalId}, Signal Code: ${
+          task.signal
+        } is for ${task.getType()})`,
+      );
+
+    if (!task.cebs || !task.cebs.investigationForm)
+      throw new Error('Please submit risk assessment form before submitting summary form');
+
+    task = await this.taskService.update(task._id, {
+      'cebs.summaryForm': {
         ...{
           user,
           via: 'internet',

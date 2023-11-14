@@ -89,3 +89,9 @@ export const verificationFormJoi = joi.object({
   threatTo: joi.string(),
   dateSCDSCInformed: joi.date().iso(),
 });
+
+export const summaryFormJoi = joi.object({
+  cause: joi.string(),
+  eventStatus: joi.string(),
+  escalatedTo: joi.string(),
+});
