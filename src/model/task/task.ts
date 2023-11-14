@@ -8,13 +8,21 @@ import { RoleModel, Role } from '../user/role';
 import { UserDocument } from '../user/user';
 import { UnitModel } from '../unit/unit';
 import { TASK_REMINDER_ESCALATE_AFTER, TASK_REMINDER_UNITS } from '../../config/task';
-import { VerificationForm, InvestigationForm, ResponseForm, EscalationForm, SummaryForm } from '../../types/form';
+import {
+  VerificationForm,
+  InvestigationForm,
+  ResponseForm,
+  EscalationForm,
+  SummaryForm,
+  LabForm,
+} from '../../types/form';
 import {
   verificationFormSchema,
   investigationFormSchema,
   responseFormSchema,
   escalationFormSchema,
   summaryFormSchema,
+  labFormSchema,
 } from '../../util/form.schema';
 
 export type Task = {
@@ -53,6 +61,7 @@ export type Task = {
     responseForm?: ResponseForm;
     escalationForm?: EscalationForm;
     summaryForm?: SummaryForm;
+    labForm?: LabForm;
   };
   cebs?: {
     verificationForm?: VerificationForm;
@@ -60,6 +69,7 @@ export type Task = {
     responseForm?: ResponseForm;
     escalationForm?: EscalationForm;
     summaryForm?: SummaryForm;
+    labForm?: LabForm;
   };
   hebs?: {
     verificationForm?: VerificationForm;
@@ -67,6 +77,7 @@ export type Task = {
     responseForm?: ResponseForm;
     escalationForm?: EscalationForm;
     summaryForm?: SummaryForm;
+    labForm?: LabForm;
   };
   lebs?: {
     verificationForm?: {
@@ -82,6 +93,7 @@ export type Task = {
       isStillHappening: string;
       isReportedBefore: string;
       dateSCDSCInformed: Date;
+
       via: 'internet' | 'sms';
       spot?: Role['spot'];
     };
@@ -149,6 +161,7 @@ export type Task = {
     };
     escalationForm?: EscalationForm;
     summaryForm?: SummaryForm;
+    labForm?: LabForm;
   };
   status: 'pending' | 'completed';
   state: 'test' | 'live';
@@ -168,19 +181,23 @@ export type TaskDocument = DefaultDocument &
         | 'vebs-response'
         | 'vebs-escalation'
         | 'vebs-summary'
+        | 'vebs-lab'
         | 'cebs-verification'
         | 'cebs-investigation'
         | 'cebs-response'
         | 'cebs-escalation'
         | 'cebs-summary'
+        | 'cebs-lab'
         | 'hebs-verification'
         | 'hebs-investigation'
         | 'hebs-response'
         | 'hebs-escalation'
         | 'hebs-summary'
+        | 'hebs-lab'
         | 'lebs-verification'
         | 'lebs-investigation'
         | 'lebs-response'
+        | 'lebs-lab'
         | 'lebs-summary';
 
       users: UserDocument[];
@@ -296,6 +313,7 @@ const taskSchema = new Schema(
           responseForm: responseFormSchema,
           escalationForm: escalationFormSchema,
           summaryForm: summaryFormSchema,
+          labForm: labFormSchema,
         },
         { timestamps: true },
       ),
@@ -309,6 +327,7 @@ const taskSchema = new Schema(
           responseForm: responseFormSchema,
           escalationForm: escalationFormSchema,
           summaryForm: summaryFormSchema,
+          labForm: labFormSchema,
         },
         { timestamps: true },
       ),
@@ -322,6 +341,7 @@ const taskSchema = new Schema(
           responseForm: responseFormSchema,
           escalationForm: escalationFormSchema,
           summaryForm: summaryFormSchema,
+          labForm: labFormSchema,
         },
         { timestamps: true },
       ),
@@ -482,6 +502,7 @@ const taskSchema = new Schema(
           },
           escalationForm: escalationFormSchema,
           summaryForm: summaryFormSchema,
+          labForm: labFormSchema,
         },
         { timestamps: true },
       ),
@@ -739,20 +760,24 @@ async function toInform(): Promise<{
     | 'vebs-response'
     | 'vebs-escalation'
     | 'vebs-summary'
+    | 'vebs-lab'
     | 'cebs-verification'
     | 'cebs-investigation'
     | 'cebs-response'
     | 'cebs-escalation'
     | 'cebs-summary'
+    | 'cebs-lab'
     | 'hebs-verification'
     | 'hebs-investigation'
     | 'hebs-response'
     | 'hebs-escalation'
     | 'hebs-summary'
+    | 'hebs-lab'
     | 'lebs-verification'
     | 'lebs-investigation'
     | 'lebs-response'
-    | 'lebs-summary';
+    | 'lebs-summary'
+    | 'lebs-lab';
   users: UserDocument[];
 }> {
   const doc = this as TaskDocument;

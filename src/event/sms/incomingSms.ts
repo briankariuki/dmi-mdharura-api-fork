@@ -173,6 +173,44 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                   });
                 } catch (e) {}
                 return;
+
+              case `${SMS_PREFIX}cl`:
+                signalId = splits[SMS_PREFIX ? 2 : 1];
+                form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
+
+                logger.info('sms-text-signalId %o', signalId);
+                logger.info('sms-text-form %o', form);
+
+                task = await this.taskService.findOne({ signalId });
+
+                if (!SIGNALS.CEBS.includes(task.signal))
+                  throw new Error(
+                    `Please submit ${task.getType()} lab form / response form (Signal ID: ${
+                      task.signalId
+                    }, Signal Code: ${task.signal} is for ${task.getType()})`,
+                  );
+
+                if (!task.cebs || !task.cebs.labForm)
+                  throw new Error('Please submit risk assessment form before submitting lab form');
+
+                await this.taskService.update(task._id, {
+                  'cebs.labForm': {
+                    ...{
+                      user: userId,
+                      via: 'sms',
+                    },
+                    ...(form as any),
+                  },
+                });
+
+                try {
+                  this.smsService.send({
+                    to: phoneNumber,
+                    message: `Hi ${displayName}. Thank you for submitting CEBS lab form`,
+                  });
+                } catch (e) {}
+                return;
+
               case `${SMS_PREFIX}cs`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
@@ -209,6 +247,7 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                   });
                 } catch (e) {}
                 return;
+
               case `${SMS_PREFIX}ce`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
@@ -347,6 +386,43 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                   this.smsService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS response form`,
+                  });
+                } catch (e) {}
+                return;
+
+              case `${SMS_PREFIX}hl`:
+                signalId = splits[SMS_PREFIX ? 2 : 1];
+                form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
+
+                logger.info('sms-text-signalId %o', signalId);
+                logger.info('sms-text-form %o', form);
+
+                task = await this.taskService.findOne({ signalId });
+
+                if (!SIGNALS.HEBS.includes(task.signal))
+                  throw new Error(
+                    `Please submit ${task.getType()} investigation form / response form (Signal ID: ${
+                      task.signalId
+                    }, Signal Code: ${task.signal} is for ${task.getType()})`,
+                  );
+
+                if (!task.hebs || !task.hebs.investigationForm)
+                  throw new Error('Please submit risk assessment form before submitting lab form');
+
+                await this.taskService.update(task._id, {
+                  'hebs.labForm': {
+                    ...{
+                      user: userId,
+                      via: 'sms',
+                    },
+                    ...(form as any),
+                  },
+                });
+
+                try {
+                  this.smsService.send({
+                    to: phoneNumber,
+                    message: `Hi ${displayName}. Thank you for submitting HEBS lab form`,
                   });
                 } catch (e) {}
                 return;
@@ -528,6 +604,44 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                   });
                 } catch (e) {}
                 return;
+
+              case `${SMS_PREFIX}vl`:
+                signalId = splits[SMS_PREFIX ? 2 : 1];
+                form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
+
+                logger.info('sms-text-signalId %o', signalId);
+                logger.info('sms-text-form %o', form);
+
+                task = await this.taskService.findOne({ signalId });
+
+                if (!SIGNALS.VEBS.includes(task.signal))
+                  throw new Error(
+                    `Please submit ${task.getType()} investigation form (Signal ID: ${task.signalId}, Signal Code: ${
+                      task.signal
+                    } is for ${task.getType()})`,
+                  );
+
+                if (!task.vebs || !task.vebs.investigationForm)
+                  throw new Error('Please submit risk assessment form before submitting lab form');
+
+                await this.taskService.update(task._id, {
+                  'vebs.labForm': {
+                    ...{
+                      user: userId,
+                      via: 'sms',
+                    },
+                    ...(form as any),
+                  },
+                });
+
+                try {
+                  this.smsService.send({
+                    to: phoneNumber,
+                    message: `Hi ${displayName}. Thank you for submitting VEBS lab form`,
+                  });
+                } catch (e) {}
+                return;
+
               case `${SMS_PREFIX}vs`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
@@ -702,6 +816,43 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                   this.smsService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS response form`,
+                  });
+                } catch (e) {}
+                return;
+
+              case `${SMS_PREFIX}ll`:
+                signalId = splits[SMS_PREFIX ? 2 : 1];
+                form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
+
+                logger.info('sms-text-signalId %o', signalId);
+                logger.info('sms-text-form %o', form);
+
+                task = await this.taskService.findOne({ signalId });
+
+                if (!SIGNALS.LEBS.includes(task.signal))
+                  throw new Error(
+                    `Please submit ${task.getType()} investigation form (Signal ID: ${task.signalId}, Signal Code: ${
+                      task.signal
+                    } is for ${task.getType()})`,
+                  );
+
+                if (!task.lebs || !task.lebs.investigationForm)
+                  throw new Error('Please submit risk assessment form before submitting lab form');
+
+                await this.taskService.update(task._id, {
+                  'lebs.labForm': {
+                    ...{
+                      user: userId,
+                      via: 'sms',
+                    },
+                    ...(form as any),
+                  },
+                });
+
+                try {
+                  this.smsService.send({
+                    to: phoneNumber,
+                    message: `Hi ${displayName}. Thank you for submitting LEBS lab form`,
                   });
                 } catch (e) {}
                 return;

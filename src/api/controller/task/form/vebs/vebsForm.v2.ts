@@ -7,6 +7,7 @@ import { SIGNALS } from '../../../../../config/signal';
 import {
   escalationFormJoi,
   investigationFormJoiV2,
+  labFormJoi,
   responseFormJoi,
   summaryFormJoi,
   verificationFormJoi,
@@ -83,6 +84,46 @@ export class VebsFormControllerV2 extends BaseHttpController {
 
     task = await this.taskService.update(task._id, {
       'vebs.investigationForm': {
+        ...{
+          user,
+          via: 'internet',
+        },
+        ...body,
+      },
+    });
+
+    this.httpContext.response.json({ task });
+  }
+
+  @httpPut(
+    '/lab',
+    celebrate({
+      body: labFormJoi,
+    }),
+  )
+  async lab(): Promise<void> {
+    const {
+      user: { details: user },
+      request: {
+        body,
+        params: { signalId },
+      },
+    } = this.httpContext;
+
+    let task = await this.taskService.findOne({ signalId });
+
+    if (!SIGNALS.VEBS.includes(task.signal))
+      throw new Error(
+        `Please submit ${task.getType()} lab form (Signal ID: ${task.signalId}, Signal Code: ${
+          task.signal
+        } is for ${task.getType()})`,
+      );
+
+    if (!task.vebs || !task.vebs.investigationForm)
+      throw new Error('Please submit risk assessment form before submitting lab form');
+
+    task = await this.taskService.update(task._id, {
+      'vebs.labForm': {
         ...{
           user,
           via: 'internet',
