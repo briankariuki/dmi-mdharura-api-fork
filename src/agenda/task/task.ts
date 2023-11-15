@@ -48,18 +48,22 @@ export class TaskAgendaEmitter extends Agenda {
           { path: 'cebs.investigationForm.user' },
           { path: 'cebs.responseForm.user' },
           { path: 'cebs.escalationForm.user' },
+          { path: 'cebs.summaryForm.user' },
           { path: 'vebs.verificationForm.user' },
           { path: 'vebs.investigationForm.user' },
           { path: 'vebs.responseForm.user' },
           { path: 'vebs.escalationForm.user' },
+          { path: 'vebs.summaryForm.user' },
           { path: 'hebs.verificationForm.user' },
           { path: 'hebs.investigationForm.user' },
           { path: 'hebs.responseForm.user' },
           { path: 'hebs.escalationForm.user' },
+          { path: 'hebs.summaryForm.user' },
           { path: 'lebs.verificationForm.user' },
           { path: 'lebs.investigationForm.user' },
           { path: 'lebs.responseForm.user' },
           { path: 'lebs.escalationForm.user' },
+          { path: 'lebs.summaryForm.user' },
         ]);
 
         logger.info('task-agenda %o', task._id);
@@ -77,6 +81,7 @@ export class TaskAgendaEmitter extends Agenda {
             const date = moment.tz(createdAt, moment.tz.zonesForCountry('KE')[0]).format('llll');
 
             let message: string;
+            let summary: string;
 
             switch (stage) {
               case 'vebs-verification':
@@ -114,7 +119,24 @@ export class TaskAgendaEmitter extends Agenda {
                 message = `Please respond to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${vebInvestigator.displayName} ${vebInvestigator.phoneNumber}\nDated: ${date}`;
+
+                summary = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${vebInvestigator.displayName} ${vebInvestigator.phoneNumber}\nDated: ${date}`;
                 break;
+
+              case 'vebs-summary':
+                const {
+                  investigationForm: { user: _vebSummarizer },
+                } = vebs;
+
+                const vebSummarizer = (_vebSummarizer as unknown) as UserDocument;
+
+                message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${vebSummarizer.displayName} ${vebSummarizer.phoneNumber}\nDated: ${date}`;
+                break;
+
               case 'vebs-escalation':
                 const {
                   responseForm: { user: _vebResponder },
@@ -161,6 +183,22 @@ export class TaskAgendaEmitter extends Agenda {
                 message = `Please respond to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${cebInvestigator.displayName} ${cebInvestigator.phoneNumber}\nDated: ${date}`;
+
+                summary = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${cebInvestigator.displayName} ${cebInvestigator.phoneNumber}\nDated: ${date}`;
+
+                break;
+              case 'cebs-summary':
+                const {
+                  investigationForm: { user: _cebSummarizer },
+                } = cebs;
+
+                const cebSummarizer = (_cebSummarizer as unknown) as UserDocument;
+
+                message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${cebSummarizer.displayName} ${cebSummarizer.phoneNumber}\nDated: ${date}`;
                 break;
               case 'cebs-escalation':
                 const {
@@ -173,6 +211,7 @@ export class TaskAgendaEmitter extends Agenda {
                   unit.name
                 }\nResponded by: ${cebResponder.displayName} ${cebResponder.phoneNumber}\nDated: ${date}`;
                 break;
+
               case 'hebs-verification':
                 switch (type) {
                   case 'reminder':
@@ -208,6 +247,23 @@ export class TaskAgendaEmitter extends Agenda {
                 message = `Please respond to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${hebInvestigator.displayName} ${hebInvestigator.phoneNumber}\nDated: ${date}`;
+
+                summary = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${hebInvestigator.displayName} ${hebInvestigator.phoneNumber}\nDated: ${date}`;
+
+                break;
+
+              case 'hebs-summary':
+                const {
+                  investigationForm: { user: _hebSummarizer },
+                } = hebs;
+
+                const hebSummarizer = (_hebSummarizer as unknown) as UserDocument;
+
+                message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${hebSummarizer.displayName} ${hebSummarizer.phoneNumber}\nDated: ${date}`;
                 break;
               case 'hebs-escalation':
                 const {
@@ -255,10 +311,28 @@ export class TaskAgendaEmitter extends Agenda {
                 message = `Please respond to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${lebsInvestigator.displayName} ${lebsInvestigator.phoneNumber}\nDated: ${date}`;
+
+                summary = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${lebsInvestigator.displayName} ${lebsInvestigator.phoneNumber}\nDated: ${date}`;
+                break;
+
+              case 'lebs-summary':
+                const {
+                  investigationForm: { user: _lebSummarizer },
+                } = lebs;
+
+                const lebSummarizer = (_lebSummarizer as unknown) as UserDocument;
+
+                message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${lebSummarizer.displayName} ${lebSummarizer.phoneNumber}\nDated: ${date}`;
                 break;
             }
 
             if (message) await this.smsService.send({ to: users.map((user) => user.phoneNumber), message });
+
+            if (summary) await this.smsService.send({ to: users.map((user) => user.phoneNumber), message: summary });
           }
 
           const job = this.create(TASK_AGENDA_JOB, { taskId });
