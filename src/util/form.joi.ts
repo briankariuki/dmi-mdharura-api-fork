@@ -95,3 +95,9 @@ export const summaryFormJoi = joi.object({
   eventStatus: joi.string(),
   escalatedTo: joi.string(),
 });
+
+export const labFormJoi = joi.object({
+  dateSampleCollected: joi.string(),
+  labResults: joi.string(),
+  dateLabResultsReceived: joi.string(),
+});

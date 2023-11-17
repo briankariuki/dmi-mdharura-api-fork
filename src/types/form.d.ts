@@ -82,3 +82,12 @@ export type SummaryForm = {
   via: 'internet' | 'sms';
   spot?: Role['spot'];
 };
+
+export type LabForm = {
+  user: string;
+  dateSampleCollected: Date;
+  labResults: string;
+  dateLabResultsReceived: Date;
+  via: 'internet' | 'sms';
+  spot?: Role['spot'];
+};
