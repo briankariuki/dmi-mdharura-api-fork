@@ -281,4 +281,66 @@ export class TaskService {
 
     return pageResult;
   }
+
+  async download(query: Query): Promise<TaskDocument[]> {
+    const docs = await TaskModel.aggregate([
+      {
+        $match: query,
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: {
+          path: '$user',
+        },
+      },
+      {
+        $lookup: {
+          from: 'units',
+          localField: 'unit',
+          foreignField: '_id',
+          as: 'unit',
+        },
+      },
+      {
+        $unwind: {
+          path: '$unit',
+        },
+      },
+      {
+        $lookup: {
+          from: 'units',
+          localField: 'unit.parent',
+          foreignField: '_id',
+          as: 'unit.parent',
+        },
+      },
+      {
+        $unwind: {
+          path: '$unit.parent',
+        },
+      },
+      {
+        $lookup: {
+          from: 'units',
+          localField: 'unit.parent.parent',
+          foreignField: '_id',
+          as: 'unit.parent.parent',
+        },
+      },
+      {
+        $unwind: {
+          path: '$unit.parent.parent',
+        },
+      },
+    ]);
+
+    return docs;
+  }
 }
