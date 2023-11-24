@@ -38,7 +38,7 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
       try {
         logger.info('incomingWhatsapp-created %o', incomingWhatsapp._id);
 
-        const { waId, body: text } = incomingWhatsapp;
+        const { waId, body: text, from } = incomingWhatsapp;
 
         const phoneNumber = `+${waId}`;
 
@@ -1004,11 +1004,14 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
           });
         }
       } catch (error) {
-        const { waId } = incomingWhatsapp;
+        const { waId, from } = incomingWhatsapp;
 
         const phoneNumber = `+${waId}`;
         try {
-          await this.whatsappService.send({ to: phoneNumber, message: (error as Error).message });
+          await this.whatsappService.send({
+            to: phoneNumber,
+            message: (error as Error).message,
+          });
         } catch (e) {}
 
         logger.error('incomingWhatsapp-created %o', (error as Error).message);

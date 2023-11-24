@@ -8,23 +8,6 @@ export class WhatsappController extends BaseHttpController {
   @inject(IncomingWhatsappService)
   incomingWhatsappService: IncomingWhatsappService;
 
-  // {
-  //   "SmsMessageSid": "SM8fa497c1353e234fd17d865acb9b835c",
-  //   "NumMedia": "0",
-  //   "ProfileName": "brian",
-  //   "SmsSid": "SM8fa497c1353e234fd17d865acb9b835c",
-  //   "WaId": "254729948411",
-  //   "SmsStatus": "received",
-  //   "Body": "Hello",
-  //   "To": "whatsapp:+14155238886",
-  //   "NumSegments": "1",
-  //   "ReferralNumMedia": "0",
-  //   "MessageSid": "SM8fa497c1353e234fd17d865acb9b835c",
-  //   "AccountSid": "ACcbeff8ece366bcbdf678d76df068873a",
-  //   "From": "whatsapp:+254729948411",
-  //   "ApiVersion": "2010-04-01"
-  // }
-
   @httpPost(
     '/incoming',
     celebrate({

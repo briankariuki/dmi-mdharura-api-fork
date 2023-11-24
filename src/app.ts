@@ -16,6 +16,7 @@ import stc from 'string-to-color';
 import initWhatsappWebClient from './loader/whatsapp-web';
 import qrcode from 'qrcode-terminal';
 import { IncomingWhatsappService } from './service/whatsapp/incomingWhatsapp';
+import { Client } from 'whatsapp-web.js';
 
 String.prototype.toHex = function () {
   return stc(this);
@@ -31,6 +32,8 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
   logger.error('UNHANDLED_REJECTION: Reason: %o', reason);
   logger.error('UNHANDLED_REJECTION: Promise: %o', promise);
 });
+
+let whatsappClient: Client;
 
 async function serve(): Promise<void> {
   await initDb();
@@ -51,7 +54,7 @@ async function serve(): Promise<void> {
 
   logger.info('APP_LOADED');
 
-  const whatsappClient = await initWhatsappWebClient();
+  whatsappClient = initWhatsappWebClient();
 
   whatsappClient.on('qr', (qr) => {
     logger.info('WHATSAPP_WEB_CLIENT_QR_CODE_RECEIVED');
@@ -64,25 +67,23 @@ async function serve(): Promise<void> {
   });
 
   whatsappClient.on('message', async (message) => {
-    console.log(message);
-
     if (message.isStatus == false && message.hasMedia == false) {
       logger.info('WHATSAPP_WEB_CLIENT_MESSAGE_RECEIVED');
 
       await container.get(IncomingWhatsappService).create({
         smsMessageSid: message.id.id,
         numMedia: '0',
-        profileName: message.author,
+        profileName: message.author ?? message.from,
         smsSid: message.id.id,
-        waId: message.author.split('@')[0],
+        waId: (message.author ?? message.from).split('@')[0],
         smsStatus: 'received',
         body: message.body,
-        to: `whatsapp:+${message.to.split('@')[0]}`,
+        to: message.to,
         numSegments: '1',
         referralNumMedia: '0',
         messageSid: message.id.id,
         accountSid: '',
-        from: `whatsapp:+${message.author.split('@')[0]}`,
+        from: message.from,
         apiVersion: 'whatsapp-web-client',
       });
     }
@@ -110,3 +111,9 @@ async function serve(): Promise<void> {
 }
 
 serve();
+
+export async function sendWhatsappMessage(chatId: string, message: string) {
+  const sent = await whatsappClient.sendMessage(chatId, message);
+
+  return sent;
+}

@@ -1,19 +1,21 @@
-import { Client, RemoteAuth } from 'whatsapp-web.js';
-import mongoose from 'mongoose';
-import { MongoStore } from 'wwebjs-mongo';
+import { Client, LocalAuth } from 'whatsapp-web.js';
+import { PROJECT_NAME } from '../config/project';
 
-export default async function initWhatsappWebClient() {
-  const store = new MongoStore({ mongoose: mongoose });
+export default function initWhatsappWebClient() {
+  // const store = new MongoStore({ mongoose: mongoose });
 
   const client = new Client({
     puppeteer: {
       args: ['--no-sandbox'],
     },
 
-    authStrategy: new RemoteAuth({
-      store: store,
-      backupSyncIntervalMs: 300000,
-    }),
+    // authStrategy: new RemoteAuth({
+    //   store: store,
+    //   clientId: PROJECT_NAME,
+    //   backupSyncIntervalMs: 300000,
+    // }),
+
+    authStrategy: new LocalAuth({ clientId: PROJECT_NAME }),
   });
 
   return client;

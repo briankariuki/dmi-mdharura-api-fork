@@ -350,7 +350,10 @@ export class TaskAgendaEmitter extends Agenda {
               } catch (error) {}
 
               try {
-                await this.whatsappService.send({ to: users.map((user) => user.phoneNumber), message: summary });
+                await this.whatsappService.send({
+                  to: users.map((user) => user.phoneNumber),
+                  message: summary,
+                });
               } catch (error) {}
             }
           }
