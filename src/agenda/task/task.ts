@@ -8,6 +8,7 @@ import { SmsService } from '../../service/sms/sms';
 import { UserDocument } from '../../model/user/user';
 import { UnitDocument } from '../../model/unit/unit';
 import { TASK_REMINDER_INTERVAL, TASK_REMINDER_UNITS, TASK_REMINDER_STOP_AFTER } from '../../config/task';
+import { WhatsappService } from '../../service/whatsapp/whatsapp';
 
 type TaskAgenda = 'task-agenda';
 
@@ -22,6 +23,9 @@ export interface TaskAgendaEmitter {
 export class TaskAgendaEmitter extends Agenda {
   @inject(SmsService)
   smsService: SmsService;
+
+  @inject(WhatsappService)
+  whatsappService: WhatsappService;
 
   constructor() {
     super({
@@ -330,9 +334,28 @@ export class TaskAgendaEmitter extends Agenda {
                 break;
             }
 
-            if (message) await this.smsService.send({ to: users.map((user) => user.phoneNumber), message });
+            if (message) {
+              try {
+                await this.smsService.send({ to: users.map((user) => user.phoneNumber), message });
+              } catch (error) {}
 
-            if (summary) await this.smsService.send({ to: users.map((user) => user.phoneNumber), message: summary });
+              try {
+                await this.whatsappService.send({ to: users.map((user) => user.phoneNumber), message });
+              } catch (error) {}
+            }
+
+            if (summary) {
+              try {
+                await this.smsService.send({ to: users.map((user) => user.phoneNumber), message: summary });
+              } catch (error) {}
+
+              try {
+                await this.whatsappService.send({
+                  to: users.map((user) => user.phoneNumber),
+                  message: summary,
+                });
+              } catch (error) {}
+            }
           }
 
           const job = this.create(TASK_AGENDA_JOB, { taskId });

@@ -6,6 +6,7 @@ import { TaskAgendaEmitter } from '../../agenda/task/task';
 import { SmsService } from '../../service/sms/sms';
 import { UserModel } from '../../model/user/user';
 import moment from 'moment-timezone';
+import { WhatsappService } from '../../service/whatsapp/whatsapp';
 
 type TaskEvent = 'task-created' | 'task-updated' | 'task-fetched' | 'task-deleted';
 
@@ -21,6 +22,9 @@ export class TaskEventEmitter extends EventEmitter {
 
   @inject(SmsService)
   smsService: SmsService;
+
+  @inject(WhatsappService)
+  whatsappService: WhatsappService;
 
   constructor() {
     super();
@@ -40,6 +44,13 @@ export class TaskEventEmitter extends EventEmitter {
         this.taskAgendaEmitter.emit('task-agenda', task._id);
 
         await this.smsService.send({
+          to: phoneNumber,
+          message: `Thank you ${displayName} for reporting signal ${signal.toUpperCase()}.\nSignal ID ${signalId}\nDated: ${moment
+            .tz(createdAt, moment.tz.zonesForCountry('KE')[0])
+            .format('llll')}`,
+        });
+
+        await this.whatsappService.send({
           to: phoneNumber,
           message: `Thank you ${displayName} for reporting signal ${signal.toUpperCase()}.\nSignal ID ${signalId}\nDated: ${moment
             .tz(createdAt, moment.tz.zonesForCountry('KE')[0])

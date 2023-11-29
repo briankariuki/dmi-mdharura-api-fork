@@ -16,6 +16,7 @@ import {
 } from '../../../config/project';
 import { UserDocument } from '../../../model/user/user';
 import { Auth0Middleware } from '../../middleware/auth';
+import { WhatsappService } from '../../../service/whatsapp/whatsapp';
 
 @controller('/v1/user')
 export class UserController extends BaseHttpController {
@@ -24,6 +25,9 @@ export class UserController extends BaseHttpController {
 
   @inject(SmsService)
   private smsService: SmsService;
+
+  @inject(WhatsappService)
+  private whatsappService: WhatsappService;
 
   @httpGet(
     '/verify/:phoneNumber',
@@ -63,6 +67,13 @@ export class UserController extends BaseHttpController {
     } catch (error) {
       throw new Error('Problem sending sms with the verification. Try again');
     }
+
+    try {
+      await this.whatsappService.send({
+        to: phoneNumber,
+        message: `${smsCode} is your ${PROJECT_NAME} verification code`,
+      });
+    } catch (error) {}
 
     response.json({ token, user });
   }
