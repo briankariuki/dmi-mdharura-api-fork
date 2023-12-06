@@ -974,6 +974,7 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                   },
                   via: 'sms',
                   state: subCounty._id,
+                  version: '2',
                 });
 
                 try {
@@ -1033,6 +1034,7 @@ export class IncomingSmsEventEmitter extends EventEmitter {
             signal: signal,
             via: 'sms',
             state: unit.state,
+            version: '2',
           });
         } else if (!user && CHT_SMS_SYNC === 'enabled') {
           const { data } = await chtApi.post(
