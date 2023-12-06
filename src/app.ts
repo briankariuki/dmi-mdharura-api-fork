@@ -70,7 +70,7 @@ async function serve(): Promise<void> {
     });
 
     whatsappClient.on('message', async (message) => {
-      if (message.isStatus == false && message.hasMedia == false) {
+      if (message.isStatus == false && message.author == null && message.hasMedia == false) {
         logger.info('WHATSAPP_WEB_CLIENT_MESSAGE_RECEIVED');
 
         await container.get(IncomingWhatsappService).create({
