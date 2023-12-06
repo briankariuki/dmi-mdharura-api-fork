@@ -77,7 +77,18 @@ PROJECT_NAME=? // Name of the project, shown in SMS
 PROJECT_OTP_LENGTH=? // Length of OTP
 PROJECT_OTP_EXPIRY=? // Duration before OTP expires
 PROJECT_OTP_CHARACTER_SET=? // Characters used to generate OTP eg '0123456789abcdefghijklmnopqrstuvwxyz', NOTE: To prevent bruteforce use alphanumeric PROJECT_OTP_CHARACTER_SET, short PROJECT_OPT_EXPIRY and long PROJECT_OTP_LENGTH
+
+//if twilio client is used
+TWILIO_ACCOUNT_SID=? //Twilio account sid
+TWILIO_AUTH_TOKEN=? //Twilio auth token
+TWILIO_PHONE_NUMBER=? //Twilio assigned phone number
+TWILIO_STATUS=? //set to 'enabled' if twilio is to be used
+
+//if whatsapp web client is used, you will need to scan the qr code printed out in the api logs to authorize the whatsapp web client
+WHATSAPP_WEB_CLIENT_STATUS=? //set to 'enabled' if whatsapp web client is to be used
+WHATSAPP_WEB_CLIENT_PHONE_NUMBER?= //the phone number connected to the whatsapp web client
 ```
+
 Add firebase.json
 
 ```
@@ -95,6 +106,7 @@ Add firebase.json
 }
 
 ```
+
 # PRODUCTION
 
 Add ecosystem.config.js file (Read more from PM2 documentation)
@@ -113,11 +125,13 @@ exports.apps = [
 ```
 
 To start
+
 ```
 yarn serve
 ```
 
 To stop
+
 ```
 yarn stop
 ```

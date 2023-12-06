@@ -18,6 +18,8 @@ import qrcode from 'qrcode-terminal';
 import { IncomingWhatsappService } from './service/whatsapp/incomingWhatsapp';
 import { Client } from 'whatsapp-web.js';
 
+import { WHATSAPP_WEB_CLIENT_STATUS } from './config/whatsapp';
+
 String.prototype.toHex = function () {
   return stc(this);
 };
@@ -54,42 +56,44 @@ async function serve(): Promise<void> {
 
   logger.info('APP_LOADED');
 
-  whatsappClient = initWhatsappWebClient();
+  if (WHATSAPP_WEB_CLIENT_STATUS === 'enabled') {
+    whatsappClient = initWhatsappWebClient();
 
-  whatsappClient.on('qr', (qr) => {
-    logger.info('WHATSAPP_WEB_CLIENT_QR_CODE_RECEIVED');
+    whatsappClient.on('qr', (qr) => {
+      logger.info('WHATSAPP_WEB_CLIENT_QR_CODE_RECEIVED');
 
-    qrcode.generate(qr, { small: true });
-  });
+      qrcode.generate(qr, { small: true });
+    });
 
-  whatsappClient.on('ready', () => {
-    logger.info('WHATSAPP_WEB_CLIENT_READY');
-  });
+    whatsappClient.on('ready', () => {
+      logger.info('WHATSAPP_WEB_CLIENT_READY');
+    });
 
-  whatsappClient.on('message', async (message) => {
-    if (message.isStatus == false && message.hasMedia == false) {
-      logger.info('WHATSAPP_WEB_CLIENT_MESSAGE_RECEIVED');
+    whatsappClient.on('message', async (message) => {
+      if (message.isStatus == false && message.hasMedia == false) {
+        logger.info('WHATSAPP_WEB_CLIENT_MESSAGE_RECEIVED');
 
-      await container.get(IncomingWhatsappService).create({
-        smsMessageSid: message.id.id,
-        numMedia: '0',
-        profileName: message.author ?? message.from,
-        smsSid: message.id.id,
-        waId: (message.author ?? message.from).split('@')[0],
-        smsStatus: 'received',
-        body: message.body,
-        to: message.to,
-        numSegments: '1',
-        referralNumMedia: '0',
-        messageSid: message.id.id,
-        accountSid: '',
-        from: message.from,
-        apiVersion: 'whatsapp-web-client',
-      });
-    }
-  });
+        await container.get(IncomingWhatsappService).create({
+          smsMessageSid: message.id.id,
+          numMedia: '0',
+          profileName: message.author ?? message.from,
+          smsSid: message.id.id,
+          waId: (message.author ?? message.from).split('@')[0],
+          smsStatus: 'received',
+          body: message.body,
+          to: message.to,
+          numSegments: '1',
+          referralNumMedia: '0',
+          messageSid: message.id.id,
+          accountSid: '',
+          from: message.from,
+          apiVersion: 'whatsapp-web-client',
+        });
+      }
+    });
 
-  whatsappClient.initialize();
+    whatsappClient.initialize();
+  }
 
   const server = http.createServer(app);
 

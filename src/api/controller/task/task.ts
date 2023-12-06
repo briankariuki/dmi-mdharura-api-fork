@@ -200,7 +200,6 @@ export class TaskController extends BaseHttpController {
         },
       });
     } catch (error) {
-      console.log(error);
       throw Error('Something went wrong. Try again');
     }
   }

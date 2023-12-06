@@ -1,12 +1,12 @@
 import { injectable } from 'inversify';
 import { isArray } from 'lodash';
 import { logger } from '../../loader/logger';
-import { TWILIO_PHONE_NUMBER, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } from '../../config/twilio';
+import { TWILIO_PHONE_NUMBER, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_STATUS } from '../../config/twilio';
+import { WHATSAPP_WEB_CLIENT_PHONE_NUMBER, WHATSAPP_WEB_CLIENT_STATUS } from '../../config/whatsapp';
 import { Twilio } from 'twilio';
-
 import { sendWhatsappMessage } from '../../app';
 
-const client = new Twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+const client = TWILIO_STATUS === 'enabled' ? new Twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) : undefined;
 
 @injectable()
 export class WhatsappService {
@@ -27,34 +27,38 @@ export class WhatsappService {
     });
 
     for (const phoneNumber of phoneNumbers) {
-      try {
-        logger.info('whatsapp-sending %o', {
-          ...params,
-          ...{
-            to: phoneNumber,
-            from: TWILIO_PHONE_NUMBER,
-          },
-        });
+      if (TWILIO_STATUS === 'enabled') {
+        try {
+          logger.info('whatsapp-sending %o', {
+            ...params,
+            ...{
+              to: phoneNumber,
+              from: TWILIO_PHONE_NUMBER,
+            },
+          });
 
-        await client.messages.create({
-          body: message,
-          to: `whatsapp:${phoneNumber}`,
-          from: `whatsapp:${TWILIO_PHONE_NUMBER}`,
-        });
-      } catch (error) {}
+          await client.messages.create({
+            body: message,
+            to: `whatsapp:${phoneNumber}`,
+            from: `whatsapp:${TWILIO_PHONE_NUMBER}`,
+          });
+        } catch (error) {}
+      }
 
-      try {
-        logger.info('whatsapp-sending %o', {
-          ...params,
-          ...{
-            to: phoneNumber,
-            from: 'whatsapp-web-client',
-          },
-        });
+      if (WHATSAPP_WEB_CLIENT_STATUS === 'enabled') {
+        try {
+          logger.info('whatsapp-sending %o', {
+            ...params,
+            ...{
+              to: phoneNumber,
+              from: `whatsapp-web-client:${WHATSAPP_WEB_CLIENT_PHONE_NUMBER}`,
+            },
+          });
 
-        //Example ChatId: 254701234567@c.us
-        await sendWhatsappMessage(`${phoneNumber.substring(1)}@c.us`, message);
-      } catch (error) {}
+          //Example ChatId: 254701234567@c.us
+          await sendWhatsappMessage(`${phoneNumber.substring(1)}@c.us`, message);
+        } catch (error) {}
+      }
     }
   }
 }
