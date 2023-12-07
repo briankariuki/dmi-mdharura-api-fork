@@ -65,13 +65,34 @@ export class TaskAnalyticsService {
               {
                 $or: [
                   {
-                    $gt: ['$cebs.investigationForm', null],
+                    $and: [
+                      {
+                        $gt: ['$cebs.investigationForm', null],
+                      },
+                      {
+                        $eq: ['$cebs.verificationForm.isThreatStillExisting', 'Yes'],
+                      },
+                    ],
                   },
                   {
-                    $gt: ['$hebs.investigationForm', null],
+                    $and: [
+                      {
+                        $gt: ['$vebs.investigationForm', null],
+                      },
+                      {
+                        $eq: ['$vebs.verificationForm.isThreatStillExisting', 'Yes'],
+                      },
+                    ],
                   },
                   {
-                    $gt: ['$vebs.investigationForm', null],
+                    $and: [
+                      {
+                        $gt: ['$hebs.investigationForm', null],
+                      },
+                      {
+                        $eq: ['$hebs.verificationForm.isThreatStillExisting', 'Yes'],
+                      },
+                    ],
                   },
                   {
                     $gt: ['$lebs.investigationForm', null],
@@ -85,15 +106,51 @@ export class TaskAnalyticsService {
           responded: {
             $cond: [
               {
+                // $or: [
+                //   {
+                //     $gt: ['$cebs.responseForm', null],
+                //   },
+                //   {
+                //     $gt: ['$hebs.responseForm', null],
+                //   },
+                //   {
+                //     $gt: ['$vebs.responseForm', null],
+                //   },
+                //   {
+                //     $gt: ['$lebs.responseForm', null],
+                //   },
+                // ],
+
                 $or: [
                   {
-                    $gt: ['$cebs.responseForm', null],
+                    $and: [
+                      {
+                        $gt: ['$cebs.responseForm', null],
+                      },
+                      {
+                        $eq: ['$cebs.verificationForm.isThreatStillExisting', 'Yes'],
+                      },
+                    ],
                   },
                   {
-                    $gt: ['$hebs.responseForm', null],
+                    $and: [
+                      {
+                        $gt: ['$vebs.responseForm', null],
+                      },
+                      {
+                        $eq: ['$vebs.verificationForm.isThreatStillExisting', 'Yes'],
+                      },
+                    ],
                   },
                   {
-                    $gt: ['$vebs.responseForm', null],
+                    $and: [
+                      {
+                        $gt: ['$hebs.responseForm', null],
+                      },
+                      {
+                        $eq: ['$hebs.verificationForm.isThreatStillExisting', 'Yes'],
+                      },
+                    ],
                   },
                   {
                     $gt: ['$lebs.responseForm', null],

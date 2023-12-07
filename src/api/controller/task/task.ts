@@ -52,6 +52,7 @@ export class TaskController extends BaseHttpController {
       signal,
       via: 'internet',
       state: unit.state,
+      version: '2',
     });
 
     this.httpContext.response.json({ task });
@@ -99,6 +100,7 @@ export class TaskController extends BaseHttpController {
       },
       via: 'internet',
       state: unit_.state,
+      version: '2',
     });
 
     this.httpContext.response.json({ task });
@@ -200,7 +202,6 @@ export class TaskController extends BaseHttpController {
         },
       });
     } catch (error) {
-      console.log(error);
       throw Error('Something went wrong. Try again');
     }
   }

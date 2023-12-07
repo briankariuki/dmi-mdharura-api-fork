@@ -16,6 +16,7 @@ export class TaskService {
     via: Task['via'];
     state: Task['state'];
     'pmebs.reportForm'?: Task['pmebs']['reportForm'];
+    version: Task['version'];
   }): Promise<Task> {
     const task = await new TaskModel(pickBy(data)).save();
 
