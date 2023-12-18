@@ -75,6 +75,10 @@ export const fieldDictionary = {
   isHumansIsolated: 74,
   isolationTypes: 75,
   eventStatuses: 76,
+  escalatedTo: 77,
+  eventCategories: 78,
+  isEventInfectious: 79,
+  systemsAffectedByEvent: 80,
 };
 
 export function decompressForm(form: Record<string, any>): Record<string, any> {

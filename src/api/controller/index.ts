@@ -9,3 +9,4 @@ import './unit';
 import './task';
 import './sms';
 import './analytics';
+import './whatsapp';

@@ -56,6 +56,9 @@ export const investigationFormSchema = new Schema(
     isEventSettingPromotingSpread: { type: String },
     additionalInformation: { type: String },
     riskClassification: { type: String },
+    isEventInfectious: { type: String },
+    eventCategories: { type: [String] },
+    systemsAffectedByEvent: { type: [String] },
     responseActivities: { type: [String] },
     dateSCMOHInformed: { type: Date },
     via: { type: String, default: 'internet', enum: ['internet', 'sms'] },
@@ -137,6 +140,68 @@ export const verificationFormSchema = new Schema(
     isThreatStillExisting: { type: String },
     threatTo: { type: String },
     dateSCDSCInformed: { type: Date },
+    via: { type: String, default: 'internet', enum: ['internet', 'sms'] },
+    spot: {
+      type: String,
+      enum: [
+        'HEBS',
+        'LEBS',
+        'CEBS',
+        'EBS',
+        'AHA',
+        'CHA',
+        'CHV',
+        'VEBS',
+        'VET',
+        'SFP',
+        'HCW',
+        'PMEBS',
+        'PEBS/MEBS',
+        'CDR',
+        'VIEWER',
+      ],
+    },
+  },
+  { timestamps: true },
+);
+
+export const summaryFormSchema = new Schema(
+  {
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    cause: { type: String },
+    escalatedTo: { type: String },
+    eventStatus: { type: String },
+    via: { type: String, default: 'internet', enum: ['internet', 'sms'] },
+    spot: {
+      type: String,
+      enum: [
+        'HEBS',
+        'LEBS',
+        'CEBS',
+        'EBS',
+        'AHA',
+        'CHA',
+        'CHV',
+        'VEBS',
+        'VET',
+        'SFP',
+        'HCW',
+        'PMEBS',
+        'PEBS/MEBS',
+        'CDR',
+        'VIEWER',
+      ],
+    },
+  },
+  { timestamps: true },
+);
+
+export const labFormSchema = new Schema(
+  {
+    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    dateSampleCollected: { type: Date },
+    labResults: { type: String },
+    dateLabResultsReceived: { type: Date },
     via: { type: String, default: 'internet', enum: ['internet', 'sms'] },
     spot: {
       type: String,

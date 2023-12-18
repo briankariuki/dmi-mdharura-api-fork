@@ -26,6 +26,7 @@ export type UserDocument = DefaultDocument &
         | 'task-verification'
         | 'task-investigation'
         | 'task-response'
+        | 'task-summary'
         | 'task-escalation'
         | 'task-request';
       resource: string;
@@ -78,6 +79,7 @@ async function can(data: {
     | 'task-verification'
     | 'task-investigation'
     | 'task-response'
+    | 'task-summary'
     | 'task-escalation'
     | 'task-request';
   resource: string;
@@ -205,6 +207,7 @@ async function can(data: {
               `You do not have permissions to investigate this task (signal ID ${taskToUpdate.signalId}) for ${unitFromTaskToUpdate.name} (${unitFromTaskToUpdate.type}). Contact your supervisor`,
             );
           break;
+
         case 'task-response':
           const responseRoleFromTaskToUpdate = await RoleModel.findOne({
             user: userId,
@@ -213,6 +216,18 @@ async function can(data: {
           });
 
           if (!responseRoleFromTaskToUpdate)
+            throw new Error(
+              `You do not have permissions to respond to this task (signal ID ${taskToUpdate.signalId}) for ${unitFromTaskToUpdate.name} (${unitFromTaskToUpdate.type}). Contact your supervisor`,
+            );
+          break;
+        case 'task-summary':
+          const summaryRoleFromTaskToUpdate = await RoleModel.findOne({
+            user: userId,
+            unit: unitFromTaskToUpdate.parent,
+            status: 'active',
+          });
+
+          if (!summaryRoleFromTaskToUpdate)
             throw new Error(
               `You do not have permissions to respond to this task (signal ID ${taskToUpdate.signalId}) for ${unitFromTaskToUpdate.name} (${unitFromTaskToUpdate.type}). Contact your supervisor`,
             );

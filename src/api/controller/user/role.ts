@@ -71,12 +71,14 @@ export class RoleController extends BaseHttpController {
         status: Joi.string(),
         page: Joi.number(),
         limit: Joi.number(),
+        dateStart: Joi.date().iso(),
+        dateEnd: Joi.date().iso(),
       }),
     }),
   )
   async retrieve(): Promise<void> {
-    const { roleId, sort, page, limit, q, spot, _status, unitId: unit, userId: user, status } = this.httpContext.request
-      .query as any;
+    const { roleId, sort, page, limit, q, spot, _status, unitId: unit, userId: user, status, dateStart, dateEnd } = this
+      .httpContext.request.query as any;
 
     if (roleId) {
       const role = await this.roleService.findById(roleId);
@@ -105,6 +107,35 @@ export class RoleController extends BaseHttpController {
     if (_status) query = { ...query, ...{ _status } };
 
     if (status) query = { ...query, ...{ status } };
+
+    if (dateStart && dateEnd)
+      query = {
+        ...query,
+        ...{
+          createdAt: {
+            $gt: dateStart,
+            $lte: dateEnd,
+          },
+        },
+      };
+    else if (dateStart)
+      query = {
+        ...query,
+        ...{
+          createdAt: {
+            $gt: dateStart,
+          },
+        },
+      };
+    else if (dateEnd)
+      query = {
+        ...query,
+        ...{
+          createdAt: {
+            $lte: dateEnd,
+          },
+        },
+      };
 
     const rolePage = await this.roleService.page(query, {
       sort,

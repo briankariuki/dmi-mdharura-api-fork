@@ -30,6 +30,9 @@ export type InvestigationForm = {
   isEventSettingPromotingSpread: string;
   additionalInformation: string;
   riskClassification: string;
+  isEventInfectious: string;
+  eventCategories: string[];
+  systemsAffectedByEvent: string[];
   responseActivities: string[];
   dateSCMOHInformed: Date;
   via: 'internet' | 'sms';
@@ -67,6 +70,24 @@ export type VerificationForm = {
   isThreatStillExisting: string;
   threatTo: string;
   dateSCDSCInformed: Date;
+  via: 'internet' | 'sms';
+  spot?: Role['spot'];
+};
+
+export type SummaryForm = {
+  user: string;
+  eventStatus: string;
+  escalatedTo: string;
+  cause: string;
+  via: 'internet' | 'sms';
+  spot?: Role['spot'];
+};
+
+export type LabForm = {
+  user: string;
+  dateSampleCollected: Date;
+  labResults: string;
+  dateLabResultsReceived: Date;
   via: 'internet' | 'sms';
   spot?: Role['spot'];
 };

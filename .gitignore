@@ -8,3 +8,6 @@ ecosystem.config.js
 files
 firebase.json
 .env.copy
+
+.wwebjs_auth
+.wwebjs_cache

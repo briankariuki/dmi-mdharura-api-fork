@@ -2,50 +2,45 @@ import { SMS_PREFIX } from './../../config/sms';
 import { EventEmitter } from 'events';
 import { injectable, inject } from 'inversify';
 import { logger } from '../../loader/logger';
-import { IncomingSmsDocument } from '../../model/sms/incomingSms';
 import { UserModel } from '../../model/user/user';
 import { TaskService } from '../../service/task/task';
 import { decompressForm } from '../../util/fieldDictionary';
 import { TaskDocument } from '../../model/task/task';
-import axios from 'axios';
-import { CHT_SMS_CALLBACK_URL, CHT_SMS_SYNC } from '../../config/cht';
 import { UnitModel } from '../../model/unit/unit';
-import { stringify } from 'querystring';
-import { SmsService } from '../../service/sms/sms';
+
 import { SIGNALS } from '../../config/signal';
+import { WhatsappService } from '../../service/whatsapp/whatsapp';
+import { IncomingWhatsappDocument } from '../../model/whatsapp/incomingWhatsapp';
 
-type IncomingSmsEvent = 'incomingSms-created' | 'incomingSms-updated' | 'incomingSms-fetched' | 'incomingSms-deleted';
+type IncomingWhatsappEvent =
+  | 'incomingWhatsapp-created'
+  | 'incomingWhatsapp-updated'
+  | 'incomingWhatsapp-fetched'
+  | 'incomingWhatsapp-deleted';
 
-const chtApi = axios.create({
-  baseURL: CHT_SMS_CALLBACK_URL,
-  headers: {
-    'Content-Type': 'application/x-www-form-urlencoded',
-  },
-});
-
-export interface IncomingSmsEventEmitter {
-  on(event: IncomingSmsEvent, listener: (incomingSms: IncomingSmsDocument) => void): this;
-  emit(event: IncomingSmsEvent, incomingSms: IncomingSmsDocument): boolean;
+export interface IncomingWhatsappEventEmitter {
+  on(event: IncomingWhatsappEvent, listener: (incomingWhatsapp: IncomingWhatsappDocument) => void): this;
+  emit(event: IncomingWhatsappEvent, incomingWhatsapp: IncomingWhatsappDocument): boolean;
 }
 
 @injectable()
-export class IncomingSmsEventEmitter extends EventEmitter {
+export class IncomingWhatsappEventEmitter extends EventEmitter {
   @inject(TaskService)
   taskService: TaskService;
 
-  @inject(SmsService)
-  smsService: SmsService;
+  @inject(WhatsappService)
+  whatsappService: WhatsappService;
 
   constructor() {
     super();
 
-    this.on('incomingSms-created', async (incomingSms) => {
+    this.on('incomingWhatsapp-created', async (incomingWhatsapp) => {
       try {
-        logger.info('incomingSms-created %o', incomingSms._id);
+        logger.info('incomingWhatsapp-created %o', incomingWhatsapp._id);
 
-        const { from, linkId, text, to, id, cost, networkCode, date } = incomingSms;
+        const { waId, body: text, from } = incomingWhatsapp;
 
-        const phoneNumber = from;
+        const phoneNumber = `+${waId}`;
 
         const user = await UserModel.findOne({ phoneNumber });
 
@@ -59,9 +54,9 @@ export class IncomingSmsEventEmitter extends EventEmitter {
 
             if (prefix === SMS_PREFIX.trim()) prefix = `${SMS_PREFIX}${splits[1]}`;
 
-            logger.info('sms-text-splits %o', splits);
+            logger.info('whatsapp-text-splits %o', splits);
 
-            logger.info('sms-text-prefix %o', prefix);
+            logger.info('whatsapp-text-prefix %o', prefix);
 
             let signalId: string;
             let form: Record<string, any>;
@@ -72,8 +67,8 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -95,7 +90,7 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS verification form`,
                   });
@@ -106,8 +101,8 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -132,19 +127,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS risk assessment form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}cr`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -169,7 +163,7 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS response form`,
                   });
@@ -181,8 +175,8 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -207,7 +201,7 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS lab form`,
                   });
@@ -219,8 +213,8 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -245,20 +239,19 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS summary form`,
                   });
                 } catch (e) {}
-
                 return;
 
               case `${SMS_PREFIX}ce`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -283,19 +276,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS escalation form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}hv`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -317,19 +309,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS verification form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}hi`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -354,19 +345,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS risk assessment form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}hr`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -391,20 +381,19 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS response form`,
                   });
                 } catch (e) {}
-
                 return;
 
               case `${SMS_PREFIX}hl`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -429,20 +418,19 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS lab form`,
                   });
                 } catch (e) {}
-
                 return;
 
               case `${SMS_PREFIX}hs`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -467,19 +455,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS summary form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}he`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -504,19 +491,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS escalation form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}vv`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -538,19 +524,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS verification form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}vi`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -574,19 +559,13 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                   },
                 });
 
-                try {
-                  this.smsService.send({
-                    to: phoneNumber,
-                    message: `Hi ${displayName}. Thank you for submitting VEBS risk assessment form`,
-                  });
-                } catch (e) {}
                 return;
               case `${SMS_PREFIX}vr`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -611,20 +590,19 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS response form`,
                   });
                 } catch (e) {}
-
                 return;
 
               case `${SMS_PREFIX}vl`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -649,20 +627,19 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS lab form`,
                   });
                 } catch (e) {}
-
                 return;
 
               case `${SMS_PREFIX}vs`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -687,19 +664,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS summary form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}ve`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -724,19 +700,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS escalation form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}lv`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -758,19 +733,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS verification form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}li`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -795,19 +769,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS risk assessment form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}lr`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -832,20 +805,19 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS response form`,
                   });
                 } catch (e) {}
-
                 return;
 
               case `${SMS_PREFIX}ll`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -870,20 +842,19 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS lab form`,
                   });
                 } catch (e) {}
-
                 return;
 
               case `${SMS_PREFIX}ls`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -908,18 +879,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS summary form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}le`:
+                signalId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -940,19 +911,18 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS escalation form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}pmr`:
                 const subCountyId = splits[SMS_PREFIX ? 2 : 1];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 3 : 2).join(' ')));
 
-                logger.info('sms-text-subCountyId %o', subCountyId);
-                logger.info('sms-text-form %o', form);
+                logger.info('whatsapp-text-subCountyId %o', subCountyId);
+                logger.info('whatsapp-text-form %o', form);
 
                 const { signal, dateDetected, description, source, locality, dateReported } = form;
 
@@ -978,21 +948,20 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting PEBS/MEBS report form`,
                   });
                 } catch (e) {}
-
                 return;
               case `${SMS_PREFIX}pmv`:
                 signalId = splits[SMS_PREFIX ? 2 : 1];
                 const unitId = splits[SMS_PREFIX ? 3 : 2];
                 form = decompressForm(JSON.parse(splits.slice(SMS_PREFIX ? 4 : 3).join(' ')));
 
-                logger.info('sms-text-signalId %o', signalId);
-                logger.info('sms-text-form %o', form);
-                logger.info('sms-text-unitId %o', unitId);
+                logger.info('whatsapp-text-signalId %o', signalId);
+                logger.info('whatsapp-text-form %o', form);
+                logger.info('whatsapp-text-unitId %o', unitId);
 
                 task = await this.taskService.findOne({ signalId });
 
@@ -1012,12 +981,11 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                 });
 
                 try {
-                  this.smsService.send({
+                  this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting PEBS/MEBS verification request form`,
                   });
                 } catch (e) {}
-
                 return;
             }
           }
@@ -1036,53 +1004,43 @@ export class IncomingSmsEventEmitter extends EventEmitter {
             state: unit.state,
             version: '2',
           });
-        } else if (!user && CHT_SMS_SYNC === 'enabled') {
-          const { data } = await chtApi.post(
-            '',
-            stringify({
-              from,
-              linkId,
-              text,
-              to,
-              id,
-              cost,
-              networkCode,
-              date: date.toISOString(),
-            }),
-          );
-
-          logger.info('incomingSms-created-forwarded-to-cht %o', data);
         }
       } catch (error) {
+        const { waId } = incomingWhatsapp;
+
+        const phoneNumber = `+${waId}`;
         try {
-          await this.smsService.send({ to: incomingSms.from, message: (error as Error).message });
+          await this.whatsappService.send({
+            to: phoneNumber,
+            message: (error as Error).message,
+          });
         } catch (e) {}
 
-        logger.error('incomingSms-created %o', (error as Error).message);
+        logger.error('incomingWhatsapp-created %o', (error as Error).message);
       }
     });
 
-    this.on('incomingSms-updated', async (incomingSms) => {
+    this.on('incomingWhatsapp-updated', async (incomingWhatsapp) => {
       try {
-        logger.info('incomingSms-updated %o', incomingSms._id);
+        logger.info('incomingWhatsapp-updated %o', incomingWhatsapp._id);
       } catch (error) {
-        logger.error('incomingSms-updated %o', (error as Error).message);
+        logger.error('incomingWhatsapp-updated %o', (error as Error).message);
       }
     });
 
-    this.on('incomingSms-fetched', async (incomingSms) => {
+    this.on('incomingWhatsapp-fetched', async (incomingWhatsapp) => {
       try {
-        logger.info('incomingSms-fetched %o', incomingSms._id);
+        logger.info('incomingWhatsapp-fetched %o', incomingWhatsapp._id);
       } catch (error) {
-        logger.error('incomingSms-fetched %o', (error as Error).message);
+        logger.error('incomingWhatsapp-fetched %o', (error as Error).message);
       }
     });
 
-    this.on('incomingSms-deleted', async (incomingSms) => {
+    this.on('incomingWhatsapp-deleted', async (incomingWhatsapp) => {
       try {
-        logger.info('incomingSms-deleted %o', incomingSms._id);
+        logger.info('incomingWhatsapp-deleted %o', incomingWhatsapp._id);
       } catch (error) {
-        logger.error('incomingSms-deleted %o', (error as Error).message);
+        logger.error('incomingWhatsapp-deleted %o', (error as Error).message);
       }
     });
   }

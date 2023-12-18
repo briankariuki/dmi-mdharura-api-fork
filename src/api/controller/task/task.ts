@@ -8,6 +8,12 @@ import { UserService } from '../../../service/user/user';
 import { UnitService } from '../../../service/unit/unit';
 import { SIGNALS } from '../../../config/signal';
 import { joi } from '../../../util/joi';
+import jsonexport from 'jsonexport';
+import { promises as fs } from 'fs';
+import { resolve } from 'path';
+import { FILE_PATH } from '../../../config/multer';
+import { sync } from 'mkdirp';
+import { Types } from 'mongoose';
 
 @controller('/v1/task', Auth0Middleware)
 export class TaskController extends BaseHttpController {
@@ -46,6 +52,7 @@ export class TaskController extends BaseHttpController {
       signal,
       via: 'internet',
       state: unit.state,
+      version: '2',
     });
 
     this.httpContext.response.json({ task });
@@ -93,6 +100,7 @@ export class TaskController extends BaseHttpController {
       },
       via: 'internet',
       state: unit_.state,
+      version: '2',
     });
 
     this.httpContext.response.json({ task });
@@ -122,6 +130,83 @@ export class TaskController extends BaseHttpController {
   }
 
   @httpGet(
+    '/download',
+    celebrate({
+      query: joi.object({ unitId: joi.string().required(), dateStart: joi.date().iso(), dateEnd: joi.date().iso() }),
+    }),
+  )
+  async taskDownload(): Promise<void> {
+    const {
+      response,
+      user: { details: _userId },
+    } = this.httpContext;
+
+    const { unitId: unit, dateStart, dateEnd } = (this.httpContext.request.query as unknown) as Record<string, any>;
+
+    await (await this.userService.findById(_userId)).can({ access: 'manage-unit', resource: unit });
+
+    let query: Query = {};
+
+    if (dateStart && dateEnd)
+      query = {
+        ...query,
+        ...{
+          createdAt: {
+            $gt: dateStart,
+            $lte: dateEnd,
+          },
+        },
+      };
+    else if (dateStart)
+      query = {
+        ...query,
+        ...{
+          createdAt: {
+            $gt: dateStart,
+          },
+        },
+      };
+    else if (dateEnd)
+      query = {
+        ...query,
+        ...{
+          createdAt: {
+            $lte: dateEnd,
+          },
+        },
+      };
+
+    query = { ...query, ...{ units: Types.ObjectId(unit) } };
+
+    const results = await this.taskService.download(query);
+
+    const docs = [];
+
+    for (let i = 0; i < results.length; i++) {
+      docs.push(JSON.parse(JSON.stringify(results[i])));
+    }
+
+    const data = await jsonexport(docs, { mapHeaders: (header: string) => header.replace(/\./g, '_').toUpperCase() });
+
+    const filename = `mdharura_tasks_${Math.floor(Date.now() / 1000)}.csv`;
+
+    //Ensure files path exists
+    sync(resolve(FILE_PATH));
+
+    try {
+      await fs.writeFile(`${resolve(FILE_PATH)}/${filename}`, data);
+
+      response.json({
+        file: {
+          filename,
+        },
+      });
+    } catch (error) {
+      throw Error('Something went wrong. Try again');
+    }
+  }
+
+  @httpGet(
     '/',
     celebrate({
       query: joi.object({
@@ -137,6 +222,8 @@ export class TaskController extends BaseHttpController {
         limit: joi.number(),
         _status: joi.string(),
         state: joi.string(),
+        dateStart: joi.date().iso(),
+        dateEnd: joi.date().iso(),
       }),
     }),
   )
@@ -153,8 +240,8 @@ export class TaskController extends BaseHttpController {
       return;
     }
 
-    const { sort, page, limit, q, _status, userId, key, unitId, type, status, state } = (this.httpContext.request
-      .query as unknown) as Record<string, any>;
+    const { sort, page, limit, q, _status, userId, key, unitId, type, status, state, dateStart, dateEnd } = (this
+      .httpContext.request.query as unknown) as Record<string, any>;
 
     let query: Query = {};
 
@@ -163,6 +250,35 @@ export class TaskController extends BaseHttpController {
     if (status) query = { ...query, ...{ status } };
 
     if (state) query = { ...query, ...{ state } };
+
+    if (dateStart && dateEnd)
+      query = {
+        ...query,
+        ...{
+          createdAt: {
+            $gt: dateStart,
+            $lte: dateEnd,
+          },
+        },
+      };
+    else if (dateStart)
+      query = {
+        ...query,
+        ...{
+          createdAt: {
+            $gt: dateStart,
+          },
+        },
+      };
+    else if (dateEnd)
+      query = {
+        ...query,
+        ...{
+          createdAt: {
+            $lte: dateEnd,
+          },
+        },
+      };
 
     if (userId) {
       const _user = await this.userService.findById(userId);
@@ -281,18 +397,26 @@ export class TaskController extends BaseHttpController {
               { 'cebs.investigationForm.user': user },
               { 'cebs.responseForm.user': user },
               { 'cebs.escalationForm.user': user },
+              { 'cebs.summaryForm.user': user },
+              { 'cebs.labForm.user': user },
               { 'vebs.verificationForm.user': user },
               { 'vebs.investigationForm.user': user },
               { 'vebs.responseForm.user': user },
               { 'vebs.escalationForm.user': user },
+              { 'vebs.summaryForm.user': user },
+              { 'vebs.labForm.user': user },
               { 'hebs.verificationForm.user': user },
               { 'hebs.investigationForm.user': user },
               { 'hebs.responseForm.user': user },
               { 'hebs.escalationForm.user': user },
+              { 'hebs.summaryForm.user': user },
+              { 'hebs.labForm.user': user },
               { 'lebs.verificationForm.user': user },
               { 'lebs.investigationForm.user': user },
               { 'lebs.responseForm.user': user },
               { 'lebs.escalationForm.user': user },
+              { 'lebs.summaryForm.user': user },
+              { 'lebs.labForm.user': user },
             ],
           },
         };
@@ -338,18 +462,26 @@ export class TaskController extends BaseHttpController {
         { path: 'cebs.investigationForm.user' },
         { path: 'cebs.responseForm.user' },
         { path: 'cebs.escalationForm.user' },
+        { path: 'cebs.summaryForm.user' },
+        { path: 'cebs.labForm.user' },
         { path: 'vebs.verificationForm.user' },
         { path: 'vebs.investigationForm.user' },
         { path: 'vebs.responseForm.user' },
         { path: 'vebs.escalationForm.user' },
+        { path: 'vebs.summaryForm.user' },
+        { path: 'vebs.labForm.user' },
         { path: 'hebs.verificationForm.user' },
         { path: 'hebs.investigationForm.user' },
         { path: 'hebs.responseForm.user' },
         { path: 'hebs.escalationForm.user' },
+        { path: 'hebs.summaryForm.user' },
+        { path: 'hebs.labForm.user' },
         { path: 'lebs.verificationForm.user' },
         { path: 'lebs.investigationForm.user' },
         { path: 'lebs.responseForm.user' },
         { path: 'lebs.escalationForm.user' },
+        { path: 'lebs.summaryForm.user' },
+        { path: 'lebs.labForm.user' },
       ],
     });
 

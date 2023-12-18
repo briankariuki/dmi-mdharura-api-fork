@@ -33,6 +33,34 @@ export const investigationFormJoi = joi.object({
   dateSCMOHInformed: joi.date().iso(),
 });
 
+export const investigationFormJoiV2 = joi.object({
+  dateSCDSCInformed: joi.date().iso(),
+  dateInvestigationStarted: joi.date().iso(),
+  dateEventStarted: joi.date().iso(),
+  symptoms: joi.string(),
+  humansCases: joi.number(),
+  humansCasesHospitalized: joi.number(),
+  humansDead: joi.number(),
+  animalsCases: joi.number(),
+  animalsDead: joi.number(),
+  isCauseKnown: joi.string(),
+  cause: joi.string(),
+  isLabSamplesCollected: joi.string(),
+  dateSampleCollected: joi.date().iso(),
+  labResults: joi.string(),
+  dateLabResultsReceived: joi.date().iso(),
+  isNewCasedReportedFromInitialArea: joi.string(),
+  isNewCasedReportedFromNewAreas: joi.string(),
+  isEventSettingPromotingSpread: joi.string(),
+  additionalInformation: joi.string(),
+  riskClassification: joi.string(),
+  isEventInfectious: joi.string(),
+  eventCategories: joi.array().items(joi.string()),
+  systemsAffectedByEvent: joi.array().items(joi.string()),
+  responseActivities: joi.array().items(joi.string()),
+  dateSCMOHInformed: joi.date().iso(),
+});
+
 export const responseFormJoi = joi.object({
   eventType: joi.string(),
   dateSCMOHInformed: joi.date().iso(),
@@ -60,4 +88,16 @@ export const verificationFormJoi = joi.object({
   isThreatStillExisting: joi.string(),
   threatTo: joi.string(),
   dateSCDSCInformed: joi.date().iso(),
+});
+
+export const summaryFormJoi = joi.object({
+  cause: joi.string(),
+  eventStatus: joi.string(),
+  escalatedTo: joi.string(),
+});
+
+export const labFormJoi = joi.object({
+  dateSampleCollected: joi.string(),
+  labResults: joi.string(),
+  dateLabResultsReceived: joi.string(),
 });
