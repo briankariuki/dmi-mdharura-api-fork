@@ -4,6 +4,7 @@ import { PROJECT_NAME } from '../config/project';
 export default function initWhatsappWebClient() {
   const client = new Client({
     puppeteer: {
+      headless: true,
       args: ['--no-sandbox'],
     },
 
