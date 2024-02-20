@@ -944,6 +944,7 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   },
                   via: 'sms',
                   state: subCounty._id,
+                  version: '2',
                 });
 
                 try {
@@ -1001,10 +1002,11 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
             signal: signal,
             via: 'sms',
             state: unit.state,
+            version: '2',
           });
         }
       } catch (error) {
-        const { waId, from } = incomingWhatsapp;
+        const { waId } = incomingWhatsapp;
 
         const phoneNumber = `+${waId}`;
         try {

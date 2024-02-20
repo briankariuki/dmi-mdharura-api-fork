@@ -167,6 +167,7 @@ export type Task = {
   state: 'test' | 'live';
   via: 'internet' | 'sms';
   spot?: Role['spot'];
+  version: string;
 };
 
 export type TaskDocument = DefaultDocument &
@@ -518,6 +519,10 @@ const taskSchema = new Schema(
       enum: ['test', 'live'],
       default: 'test',
     },
+    version: {
+      type: String,
+      default: '1',
+    },
     spot: {
       type: String,
       enum: [
@@ -643,12 +648,12 @@ async function addFields(): Promise<void> {
 }
 
 async function getStatus(): Promise<'pending' | 'completed'> {
-  const { signal, cebs, hebs, lebs, vebs } = this as TaskDocument;
+  const { signal, cebs, hebs, lebs, vebs, version } = this as TaskDocument;
 
   if (SIGNALS.CEBS.includes(signal)) {
     if (!cebs) return 'pending';
 
-    const { verificationForm, escalationForm, responseForm, investigationForm } = cebs;
+    const { verificationForm, escalationForm, responseForm, investigationForm, labForm, summaryForm } = cebs;
 
     if (escalationForm) return 'completed';
 
@@ -664,17 +669,33 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
     if (!investigationForm) return 'pending';
 
-    if (!responseForm) return 'pending';
+    if (version == '2') {
+      const { isLabSamplesCollected } = investigationForm;
 
-    if (!responseForm.recommendations) return 'completed';
+      if (isLabSamplesCollected === 'Yes' && !labForm) {
+        return 'pending';
+      }
 
-    if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (!responseForm) return 'pending';
+
+      if (!summaryForm) return 'pending';
+
+      if (!responseForm.recommendations) return 'completed';
+
+      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+    } else {
+      if (!responseForm) return 'pending';
+
+      if (!responseForm.recommendations) return 'completed';
+
+      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+    }
 
     return 'completed';
   } else if (SIGNALS.VEBS.includes(signal)) {
     if (!vebs) return 'pending';
 
-    const { verificationForm, escalationForm, responseForm, investigationForm } = vebs;
+    const { verificationForm, escalationForm, responseForm, investigationForm, labForm, summaryForm } = vebs;
 
     if (escalationForm) return 'completed';
 
@@ -690,17 +711,33 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
     if (!investigationForm) return 'pending';
 
-    if (!responseForm) return 'pending';
+    if (version == '2') {
+      const { isLabSamplesCollected } = investigationForm;
 
-    if (!responseForm.recommendations) return 'completed';
+      if (isLabSamplesCollected === 'Yes' && !labForm) {
+        return 'pending';
+      }
 
-    if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (!responseForm) return 'pending';
+
+      if (!summaryForm) return 'pending';
+
+      if (!responseForm.recommendations) return 'completed';
+
+      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+    } else {
+      if (!responseForm) return 'pending';
+
+      if (!responseForm.recommendations) return 'completed';
+
+      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+    }
 
     return 'completed';
   } else if (SIGNALS.HEBS.includes(signal)) {
     if (!hebs) return 'pending';
 
-    const { verificationForm, escalationForm, responseForm, investigationForm } = hebs;
+    const { verificationForm, escalationForm, responseForm, investigationForm, labForm, summaryForm } = hebs;
 
     if (escalationForm) return 'completed';
 
@@ -716,17 +753,33 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
     if (!investigationForm) return 'pending';
 
-    if (!responseForm) return 'pending';
+    if (version == '2') {
+      const { isLabSamplesCollected } = investigationForm;
 
-    if (!responseForm.recommendations) return 'completed';
+      if (isLabSamplesCollected === 'Yes' && !labForm) {
+        return 'pending';
+      }
 
-    if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (!responseForm) return 'pending';
+
+      if (!summaryForm) return 'pending';
+
+      if (!responseForm.recommendations) return 'completed';
+
+      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+    } else {
+      if (!responseForm) return 'pending';
+
+      if (!responseForm.recommendations) return 'completed';
+
+      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+    }
 
     return 'completed';
   } else if (SIGNALS.LEBS.includes(signal)) {
     if (!lebs) return 'pending';
 
-    const { responseForm, verificationForm, investigationForm } = lebs;
+    const { responseForm, verificationForm, investigationForm, summaryForm } = lebs;
 
     if (responseForm) return 'completed';
 
@@ -742,11 +795,21 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
     if (!investigationForm) return 'pending';
 
-    const { isCovid19WorkingCaseDefinitionMet } = investigationForm;
+    if (version == '2') {
+      const { isCovid19WorkingCaseDefinitionMet } = investigationForm;
 
-    if (isCovid19WorkingCaseDefinitionMet === 'No') return 'completed';
+      if (isCovid19WorkingCaseDefinitionMet === 'No') return 'completed';
 
-    return 'pending';
+      if (!summaryForm) return 'pending';
+
+      return 'pending';
+    } else {
+      const { isCovid19WorkingCaseDefinitionMet } = investigationForm;
+
+      if (isCovid19WorkingCaseDefinitionMet === 'No') return 'completed';
+
+      return 'pending';
+    }
   }
 
   return 'completed';
@@ -784,7 +847,7 @@ async function toInform(): Promise<{
 
   if (doc.status == 'completed') throw new Error('The task has been completed');
 
-  const { signal, cebs, hebs, lebs, createdAt, vebs } = doc;
+  const { signal, cebs, hebs, lebs, createdAt, vebs, version } = doc;
 
   const unitId = doc.populated('unit') || doc.unit;
 
@@ -905,6 +968,64 @@ async function toInform(): Promise<{
         stage: 'cebs-response',
         users: roles.map((role) => (role.user as unknown) as UserDocument),
       };
+    } else if (cebs.investigationForm.isLabSamplesCollected == 'Yes' && version == '2' && !cebs.labForm) {
+      const { parent } = await UnitModel.findById(unitId);
+
+      let roles = await RoleModel.find({
+        unit: parent,
+        status: 'active',
+        spot: {
+          $in: ['CEBS'],
+        },
+      })
+        .populate([{ path: 'user' }])
+        .limit(1);
+
+      if (!roles.length)
+        roles = await RoleModel.find({
+          unit: parent,
+          status: 'active',
+          spot: {
+            $in: ['EBS', 'CEBS'],
+          },
+        })
+          .populate([{ path: 'user' }])
+          .limit(1);
+
+      return {
+        type: 'reminder',
+        stage: 'cebs-lab',
+        users: roles.map((role) => (role.user as unknown) as UserDocument),
+      };
+    } else if (version == '2' && !cebs.summaryForm) {
+      const { parent } = await UnitModel.findById(unitId);
+
+      let roles = await RoleModel.find({
+        unit: parent,
+        status: 'active',
+        spot: {
+          $in: ['CEBS'],
+        },
+      })
+        .populate([{ path: 'user' }])
+        .limit(1);
+
+      if (!roles.length)
+        roles = await RoleModel.find({
+          unit: parent,
+          status: 'active',
+          spot: {
+            $in: ['EBS', 'CEBS'],
+          },
+        })
+          .populate([{ path: 'user' }])
+          .limit(1);
+
+      return {
+        type: 'reminder',
+        stage: 'cebs-summary',
+        users: roles.map((role) => (role.user as unknown) as UserDocument),
+      };
     } else if (!cebs.escalationForm) {
       const { parent } = await UnitModel.findById(unitId);
 
@@ -1023,6 +1144,64 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'vebs-response',
+        users: roles.map((role) => (role.user as unknown) as UserDocument),
+      };
+    } else if (vebs.investigationForm.isLabSamplesCollected == 'Yes' && version == '2' && !vebs.labForm) {
+      const { parent } = await UnitModel.findById(unitId);
+
+      let roles = await RoleModel.find({
+        unit: parent,
+        status: 'active',
+        spot: {
+          $in: ['VEBS'],
+        },
+      })
+        .populate([{ path: 'user' }])
+        .limit(1);
+
+      if (!roles.length)
+        roles = await RoleModel.find({
+          unit: parent,
+          status: 'active',
+          spot: {
+            $in: ['EBS', 'VEBS'],
+          },
+        })
+          .populate([{ path: 'user' }])
+          .limit(1);
+
+      return {
+        type: 'reminder',
+        stage: 'vebs-lab',
+        users: roles.map((role) => (role.user as unknown) as UserDocument),
+      };
+    } else if (version == '2' && !vebs.summaryForm) {
+      const { parent } = await UnitModel.findById(unitId);
+
+      let roles = await RoleModel.find({
+        unit: parent,
+        status: 'active',
+        spot: {
+          $in: ['VEBS'],
+        },
+      })
+        .populate([{ path: 'user' }])
+        .limit(1);
+
+      if (!roles.length)
+        roles = await RoleModel.find({
+          unit: parent,
+          status: 'active',
+          spot: {
+            $in: ['EBS', 'VEBS'],
+          },
+        })
+          .populate([{ path: 'user' }])
+          .limit(1);
+
+      return {
+        type: 'reminder',
+        stage: 'vebs-summary',
         users: roles.map((role) => (role.user as unknown) as UserDocument),
       };
     } else if (!vebs.escalationForm) {
@@ -1161,6 +1340,64 @@ async function toInform(): Promise<{
         stage: 'hebs-response',
         users: roles.map((role) => (role.user as unknown) as UserDocument),
       };
+    } else if (hebs.investigationForm.isLabSamplesCollected == 'Yes' && version == '2' && !hebs.labForm) {
+      const { parent } = await UnitModel.findById(unitId);
+
+      let roles = await RoleModel.find({
+        unit: parent,
+        status: 'active',
+        spot: {
+          $in: ['HEBS'],
+        },
+      })
+        .populate([{ path: 'user' }])
+        .limit(1);
+
+      if (!roles.length)
+        roles = await RoleModel.find({
+          unit: parent,
+          status: 'active',
+          spot: {
+            $in: ['EBS', 'HEBS'],
+          },
+        })
+          .populate([{ path: 'user' }])
+          .limit(1);
+
+      return {
+        type: 'reminder',
+        stage: 'hebs-lab',
+        users: roles.map((role) => (role.user as unknown) as UserDocument),
+      };
+    } else if (version == '2' && !hebs.summaryForm) {
+      const { parent } = await UnitModel.findById(unitId);
+
+      let roles = await RoleModel.find({
+        unit: parent,
+        status: 'active',
+        spot: {
+          $in: ['HEBS'],
+        },
+      })
+        .populate([{ path: 'user' }])
+        .limit(1);
+
+      if (!roles.length)
+        roles = await RoleModel.find({
+          unit: parent,
+          status: 'active',
+          spot: {
+            $in: ['EBS', 'HEBS'],
+          },
+        })
+          .populate([{ path: 'user' }])
+          .limit(1);
+
+      return {
+        type: 'reminder',
+        stage: 'hebs-summary',
+        users: roles.map((role) => (role.user as unknown) as UserDocument),
+      };
     } else if (!hebs.escalationForm) {
       const { parent } = await UnitModel.findById(unitId);
 
@@ -1279,6 +1516,35 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'lebs-response',
+        users: roles.map((role) => (role.user as unknown) as UserDocument),
+      };
+    } else if (version == '2' && !lebs.summaryForm) {
+      const { parent } = await UnitModel.findById(unitId);
+
+      let roles = await RoleModel.find({
+        unit: parent,
+        status: 'active',
+        spot: {
+          $in: ['LEBS'],
+        },
+      })
+        .populate([{ path: 'user' }])
+        .limit(1);
+
+      if (!roles.length)
+        roles = await RoleModel.find({
+          unit: parent,
+          status: 'active',
+          spot: {
+            $in: ['EBS', 'LEBS'],
+          },
+        })
+          .populate([{ path: 'user' }])
+          .limit(1);
+
+      return {
+        type: 'reminder',
+        stage: 'lebs-summary',
         users: roles.map((role) => (role.user as unknown) as UserDocument),
       };
     }

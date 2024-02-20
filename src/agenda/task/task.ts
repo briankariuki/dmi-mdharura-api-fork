@@ -85,7 +85,6 @@ export class TaskAgendaEmitter extends Agenda {
             const date = moment.tz(createdAt, moment.tz.zonesForCountry('KE')[0]).format('llll');
 
             let message: string;
-            let summary: string;
 
             switch (stage) {
               case 'vebs-verification':
@@ -124,9 +123,6 @@ export class TaskAgendaEmitter extends Agenda {
                   unit.name
                 }\nInvestigated by: ${vebInvestigator.displayName} ${vebInvestigator.phoneNumber}\nDated: ${date}`;
 
-                summary = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
-                  unit.name
-                }\nInvestigated by: ${vebInvestigator.displayName} ${vebInvestigator.phoneNumber}\nDated: ${date}`;
                 break;
 
               case 'vebs-summary':
@@ -139,6 +135,20 @@ export class TaskAgendaEmitter extends Agenda {
                 message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${vebSummarizer.displayName} ${vebSummarizer.phoneNumber}\nDated: ${date}`;
+                break;
+
+              case 'vebs-lab':
+                const {
+                  investigationForm: { user: _vebLabInvestigator },
+                } = vebs;
+
+                const vebLabInvestigator = (_vebLabInvestigator as unknown) as UserDocument;
+
+                message = `Please provide the lab results to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${vebLabInvestigator.displayName} ${
+                  vebLabInvestigator.phoneNumber
+                }\nDated: ${date}`;
                 break;
 
               case 'vebs-escalation':
@@ -188,10 +198,6 @@ export class TaskAgendaEmitter extends Agenda {
                   unit.name
                 }\nInvestigated by: ${cebInvestigator.displayName} ${cebInvestigator.phoneNumber}\nDated: ${date}`;
 
-                summary = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
-                  unit.name
-                }\nInvestigated by: ${cebInvestigator.displayName} ${cebInvestigator.phoneNumber}\nDated: ${date}`;
-
                 break;
               case 'cebs-summary':
                 const {
@@ -203,6 +209,20 @@ export class TaskAgendaEmitter extends Agenda {
                 message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${cebSummarizer.displayName} ${cebSummarizer.phoneNumber}\nDated: ${date}`;
+                break;
+
+              case 'cebs-lab':
+                const {
+                  investigationForm: { user: _cebLabInvestigator },
+                } = cebs;
+
+                const cebLabInvestigator = (_cebLabInvestigator as unknown) as UserDocument;
+
+                message = `Please provide the lab results to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${cebLabInvestigator.displayName} ${
+                  cebLabInvestigator.phoneNumber
+                }\nDated: ${date}`;
                 break;
               case 'cebs-escalation':
                 const {
@@ -252,10 +272,6 @@ export class TaskAgendaEmitter extends Agenda {
                   unit.name
                 }\nInvestigated by: ${hebInvestigator.displayName} ${hebInvestigator.phoneNumber}\nDated: ${date}`;
 
-                summary = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
-                  unit.name
-                }\nInvestigated by: ${hebInvestigator.displayName} ${hebInvestigator.phoneNumber}\nDated: ${date}`;
-
                 break;
 
               case 'hebs-summary':
@@ -268,6 +284,20 @@ export class TaskAgendaEmitter extends Agenda {
                 message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${hebSummarizer.displayName} ${hebSummarizer.phoneNumber}\nDated: ${date}`;
+                break;
+
+              case 'hebs-lab':
+                const {
+                  investigationForm: { user: _hebLabInvestigator },
+                } = hebs;
+
+                const hebLabInvestigator = (_hebLabInvestigator as unknown) as UserDocument;
+
+                message = `Please provide the lab results to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
+                  unit.name
+                }\nInvestigated by: ${hebLabInvestigator.displayName} ${
+                  hebLabInvestigator.phoneNumber
+                }\nDated: ${date}`;
                 break;
               case 'hebs-escalation':
                 const {
@@ -316,9 +346,6 @@ export class TaskAgendaEmitter extends Agenda {
                   unit.name
                 }\nInvestigated by: ${lebsInvestigator.displayName} ${lebsInvestigator.phoneNumber}\nDated: ${date}`;
 
-                summary = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
-                  unit.name
-                }\nInvestigated by: ${lebsInvestigator.displayName} ${lebsInvestigator.phoneNumber}\nDated: ${date}`;
                 break;
 
               case 'lebs-summary':
@@ -341,19 +368,6 @@ export class TaskAgendaEmitter extends Agenda {
 
               try {
                 await this.whatsappService.send({ to: users.map((user) => user.phoneNumber), message });
-              } catch (error) {}
-            }
-
-            if (summary) {
-              try {
-                await this.smsService.send({ to: users.map((user) => user.phoneNumber), message: summary });
-              } catch (error) {}
-
-              try {
-                await this.whatsappService.send({
-                  to: users.map((user) => user.phoneNumber),
-                  message: summary,
-                });
               } catch (error) {}
             }
           }
