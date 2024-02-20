@@ -2,9 +2,9 @@ exports.apps = [
   {
     name: 'm-dharura',
     script: './build/app.js',
-    instances: '1',
+    instances: '4',
     exec_mode: 'cluster',
-    max_memory_restart: '4G',
-    node_args: '--max_old_space_size=4096',
+    max_memory_restart: '2G',
+    node_args: '--max_old_space_size=2048',
   },
 ];

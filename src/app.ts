@@ -69,28 +69,30 @@ async function serve(): Promise<void> {
       logger.info('WHATSAPP_WEB_CLIENT_READY');
     });
 
-    whatsappClient.on('message', async (message) => {
-      if (message.isStatus == false && message.author == null && message.hasMedia == false) {
-        logger.info('WHATSAPP_WEB_CLIENT_MESSAGE_RECEIVED');
+    if (process.env.NODE_APP_INSTANCE === '0') {
+      whatsappClient.on('message', async (message) => {
+        if (message.isStatus == false && message.author == null && message.hasMedia == false) {
+          logger.info('WHATSAPP_WEB_CLIENT_MESSAGE_RECEIVED');
 
-        await container.get(IncomingWhatsappService).create({
-          smsMessageSid: message.id.id,
-          numMedia: '0',
-          profileName: message.author ?? message.from,
-          smsSid: message.id.id,
-          waId: (message.author ?? message.from).split('@')[0],
-          smsStatus: 'received',
-          body: message.body,
-          to: message.to,
-          numSegments: '1',
-          referralNumMedia: '0',
-          messageSid: message.id.id,
-          accountSid: '',
-          from: message.from,
-          apiVersion: 'whatsapp-web-client',
-        });
-      }
-    });
+          await container.get(IncomingWhatsappService).create({
+            smsMessageSid: message.id.id,
+            numMedia: '0',
+            profileName: message.author ?? message.from,
+            smsSid: message.id.id,
+            waId: (message.author ?? message.from).split('@')[0],
+            smsStatus: 'received',
+            body: message.body,
+            to: message.to,
+            numSegments: '1',
+            referralNumMedia: '0',
+            messageSid: message.id.id,
+            accountSid: '',
+            from: message.from,
+            apiVersion: 'whatsapp-web-client',
+          });
+        }
+      });
+    }
 
     whatsappClient.initialize();
   }
