@@ -15,3 +15,9 @@ type Dashboard = {
   columns?: number;
   height?: number;
 };
+
+type ShieldIndicator = {
+  name: string;
+  code: string;
+  value: number | string;
+};
