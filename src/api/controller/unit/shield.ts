@@ -1,21 +1,13 @@
-import { BaseHttpController, controller, httpPost, httpPut, httpGet, httpDelete } from 'inversify-express-utils';
+import { BaseHttpController, controller, httpGet } from 'inversify-express-utils';
 import { inject } from 'inversify';
 import { celebrate, Joi } from 'celebrate';
 import { UnitService } from '../../../service/unit/unit';
 import { Query, QueryParams } from '../../../plugin/types';
-import { UserService } from '../../../service/user/user';
-import { TaskService } from '../../../service/task/task';
 
 @controller('/v1/shield/unit')
 export class ShieldUnitController extends BaseHttpController {
   @inject(UnitService)
   private unitService: UnitService;
-
-  @inject(UserService)
-  private userService: UserService;
-
-  @inject(TaskService)
-  private taskService: TaskService;
 
   @httpGet(
     '/',
