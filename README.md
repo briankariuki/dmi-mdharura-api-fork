@@ -87,6 +87,13 @@ TWILIO_STATUS=? //set to 'enabled' if twilio is to be used
 //if whatsapp web client is used, you will need to scan the qr code printed out in the api logs to authorize the whatsapp web client
 WHATSAPP_WEB_CLIENT_STATUS=? //set to 'enabled' if whatsapp web client is to be used
 WHATSAPP_WEB_CLIENT_PHONE_NUMBER?= //the phone number connected to the whatsapp web client
+
+//Whatsapp service if enabled uses redis to send messages from one whatsapp instance across the cluster. You will need to install and configure redis.
+REDIS_PORT='6379' //Redis port
+REDIS_HOST='127.0.0.1' //Redis host
+REDIS_DATABASE='0' //Redis database. The default is '0'
+REDIS_MDHARURA_STREAM='mdharura' //Redis stream key. 
+
 ```
 
 Add firebase.json

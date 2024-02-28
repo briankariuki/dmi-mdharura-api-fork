@@ -139,4 +139,42 @@ export class RoleAnalyticsService {
       height: 240 + (parseInt((_graphs.length / 2).toFixed()) + 1) * 48,
     };
   }
+
+  async indicators(
+    options: {
+      primary: Record<string, unknown>;
+      secondary: Record<string, unknown>;
+      name: string;
+      code: string;
+      unique: string;
+      type: 'registered' | 'active';
+    }[],
+  ): Promise<ShieldIndicator[]> {
+    const _indicators: ShieldIndicator[] = [];
+
+    for (const option of options) {
+      const registered = await RoleModel.distinct('user', option.primary);
+
+      const active = await TaskModel.distinct(option.unique, {
+        ...{ [option.unique]: { $in: registered } },
+        ...option.secondary,
+      });
+
+      if (option.type === 'registered') {
+        _indicators.push({
+          name: option.name,
+          code: option.code,
+          value: registered.length,
+        });
+      } else {
+        _indicators.push({
+          name: option.name,
+          code: option.code,
+          value: active.length,
+        });
+      }
+    }
+
+    return _indicators;
+  }
 }

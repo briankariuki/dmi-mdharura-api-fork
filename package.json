@@ -71,6 +71,7 @@
     "image-size": "^0.9.3",
     "inversify": "^5.0.1",
     "inversify-express-utils": "^6.3.2",
+    "ioredis": "^5.3.2",
     "is-image": "^3.0.0",
     "is-video": "^1.0.1",
     "jsonexport": "^3.2.0",

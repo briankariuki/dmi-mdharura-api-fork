@@ -3,8 +3,10 @@ import { TaskModel } from '../../model/task/task';
 
 @injectable()
 export class TaskAnalyticsService {
-  async processes(match: Record<string, any>): Promise<Dashboard> {
-    const _aggregate: {
+  async aggregate(
+    match: Record<string, any>,
+  ): Promise<
+    {
       reported: number;
       verified: number;
       verifiedTrue: number;
@@ -12,7 +14,9 @@ export class TaskAnalyticsService {
       responded: number;
       toBeEscalated: number;
       escalated: number;
-    }[] = await TaskModel.aggregate([
+    }[]
+  > {
+    return await TaskModel.aggregate([
       { $match: match },
       {
         $project: {
@@ -274,6 +278,10 @@ export class TaskAnalyticsService {
         },
       },
     ]);
+  }
+
+  async processes(match: Record<string, any>): Promise<Dashboard> {
+    const _aggregate = await this.aggregate(match);
 
     if (_aggregate.length) {
       const _graphs: Graph[] = [];
@@ -364,5 +372,105 @@ export class TaskAnalyticsService {
     }
 
     throw new Error('No dashboard available');
+  }
+
+  async indicators(match: Record<string, unknown>, type: string): Promise<ShieldIndicator[]> {
+    const _aggregate = await this.aggregate(match);
+
+    if (_aggregate.length) {
+      const _indicators: ShieldIndicator[] = [];
+
+      if (type === 'CEBS') {
+        _indicators.push({
+          name: 'CEBS Signals Reported',
+          code: 'SURV.IND.EBS04',
+          value: _aggregate[0].reported,
+        });
+
+        _indicators.push({
+          name: 'CEBS Signals Verified',
+          code: 'SURV.IND.EBS05',
+          value: _aggregate[0].verified,
+        });
+
+        _indicators.push({
+          name: 'CEBS Signals Verified True',
+          code: 'SURV.IND.EBS07',
+          value: _aggregate[0].verifiedTrue,
+        });
+
+        _indicators.push({
+          name: 'CEBS Signals Risk Assessed',
+          code: 'SURV.IND.EBS09',
+          value: _aggregate[0].investigated,
+        });
+
+        _indicators.push({
+          name: 'CEBS Signals Responded',
+          code: 'SURV.IND.EBS11',
+          value: _aggregate[0].responded,
+        });
+
+        _indicators.push({
+          name: 'CEBS Signals To Be Escalated',
+          code: 'SURV.IND.EBS13',
+          value: _aggregate[0].toBeEscalated,
+        });
+
+        _indicators.push({
+          name: 'CEBS Signals Escalated',
+          code: 'SURV.IND.EBS13',
+          value: _aggregate[0].escalated,
+        });
+      }
+
+      if (type === 'HEBS') {
+        _indicators.push({
+          name: 'HEBS Signals Reported',
+          code: 'SURV.IND.EBS18',
+          value: _aggregate[0].reported,
+        });
+
+        _indicators.push({
+          name: 'HEBS Signals Verified',
+          code: 'SURV.IND.EBS19',
+          value: _aggregate[0].verified,
+        });
+
+        _indicators.push({
+          name: 'HEBS Signals Verified True',
+          code: 'SURV.IND.EBS21',
+          value: _aggregate[0].verifiedTrue,
+        });
+
+        _indicators.push({
+          name: 'HEBS Signals Risk Assessed',
+          code: 'SURV.IND.EBS23',
+          value: _aggregate[0].investigated,
+        });
+
+        _indicators.push({
+          name: 'HEBS Signals Responded',
+          code: 'SURV.IND.EBS25',
+          value: _aggregate[0].responded,
+        });
+
+        _indicators.push({
+          name: 'HEBS Signals To Be Escalated',
+          code: 'SURV.IND.EBS27',
+          value: _aggregate[0].toBeEscalated,
+        });
+
+        _indicators.push({
+          name: 'HEBS Signals Escalated',
+          code: 'SURV.IND.EBS27',
+          value: _aggregate[0].escalated,
+        });
+      }
+
+      return _indicators;
+    }
+
+    throw new Error('No indicators available');
   }
 }
