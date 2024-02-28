@@ -4,7 +4,8 @@ import { logger } from '../../loader/logger';
 import { TWILIO_PHONE_NUMBER, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_STATUS } from '../../config/twilio';
 import { WHATSAPP_WEB_CLIENT_PHONE_NUMBER, WHATSAPP_WEB_CLIENT_STATUS } from '../../config/whatsapp';
 import { Twilio } from 'twilio';
-import { sendWhatsappMessage } from '../../app';
+import { redisClient } from '../../loader/redis';
+import { REDIS_MDHARURA_STREAM } from '../../config/redis';
 
 const client = TWILIO_STATUS === 'enabled' ? new Twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) : undefined;
 
@@ -47,7 +48,7 @@ export class WhatsappService {
 
       if (WHATSAPP_WEB_CLIENT_STATUS === 'enabled') {
         try {
-          logger.info('whatsapp-sending %o', {
+          logger.warn('whatsapp-queued %o', {
             ...params,
             ...{
               to: phoneNumber,
@@ -56,7 +57,8 @@ export class WhatsappService {
           });
 
           //Example ChatId: 254701234567@c.us
-          await sendWhatsappMessage(`${phoneNumber.substring(1)}@c.us`, message);
+          //Queue whatsapp notification in redis stream
+          await redisClient.xadd(REDIS_MDHARURA_STREAM, '*', `${phoneNumber.substring(1)}@c.us`, message);
         } catch (error) {}
       }
     }
