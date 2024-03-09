@@ -44,6 +44,8 @@ export class ShieldAnalyticsController extends BaseHttpController {
 
     const unit = await this.unitService.findById(unitId);
 
+    await unit.populate([{ path: 'parent', populate: [{ path: 'parent' }] }]).execPopulate();
+
     let match: { units: string | string[]; state?: string; createdAt?: any } = {
       units: unit._id,
     };
