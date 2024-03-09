@@ -150,7 +150,7 @@ export class RoleAnalyticsService {
       type: 'registered' | 'active';
     }[],
   ): Promise<ShieldIndicator[]> {
-    const _indicators: ShieldIndicator[] = [];
+    const indicators: ShieldIndicator[] = [];
 
     for (const option of options) {
       const registered = await RoleModel.distinct('user', option.primary);
@@ -161,13 +161,13 @@ export class RoleAnalyticsService {
       });
 
       if (option.type === 'registered') {
-        _indicators.push({
+        indicators.push({
           name: option.name,
           code: option.code,
           value: registered.length,
         });
       } else {
-        _indicators.push({
+        indicators.push({
           name: option.name,
           code: option.code,
           value: active.length,
@@ -175,6 +175,6 @@ export class RoleAnalyticsService {
       }
     }
 
-    return _indicators;
+    return indicators;
   }
 }

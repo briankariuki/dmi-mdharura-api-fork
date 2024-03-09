@@ -50,32 +50,92 @@ export class ShieldAnalyticsController extends BaseHttpController {
 
     if (state) match = { ...match, ...{ state } };
 
+    // if (dateStart && dateEnd)
+    //   match = {
+    //     ...match,
+    //     ...{
+    //       createdAt: {
+    //         $gt: dateStart,
+    //         $lte: dateEnd,
+    //       },
+    //     },
+    //   };
+    // else if (dateStart)
+    //   match = {
+    //     ...match,
+    //     ...{
+    //       createdAt: {
+    //         $gt: dateStart,
+    //       },
+    //     },
+    //   };
+    // else if (dateEnd)
+    //   match = {
+    //     ...match,
+    //     ...{
+    //       createdAt: {
+    //         $lte: dateEnd,
+    //       },
+    //     },
+    //   };
+
     if (dateStart && dateEnd)
       match = {
         ...match,
         ...{
-          createdAt: {
-            $gt: dateStart,
-            $lte: dateEnd,
-          },
+          $or: [
+            {
+              createdAt: {
+                $lte: dateEnd,
+                $gte: dateStart,
+              },
+            },
+
+            {
+              updatedAt: {
+                $lte: dateEnd,
+                $gte: dateStart,
+              },
+            },
+          ],
         },
       };
     else if (dateStart)
       match = {
         ...match,
         ...{
-          createdAt: {
-            $gt: dateStart,
-          },
+          $or: [
+            {
+              createdAt: {
+                $gte: dateStart,
+              },
+            },
+
+            {
+              updatedAt: {
+                $gte: dateStart,
+              },
+            },
+          ],
         },
       };
     else if (dateEnd)
       match = {
         ...match,
         ...{
-          createdAt: {
-            $lte: dateEnd,
-          },
+          $or: [
+            {
+              createdAt: {
+                $lte: dateEnd,
+              },
+            },
+
+            {
+              updatedAt: {
+                $lte: dateEnd,
+              },
+            },
+          ],
         },
       };
 
@@ -113,7 +173,7 @@ export class ShieldAnalyticsController extends BaseHttpController {
 
       options.push({
         name: 'CHVs Registered',
-        code: 'SURV.IND.EBS01',
+        code: 'SURV.IND.EBS15',
         unique: 'user',
         type: 'registered',
         primary: { units: unit._id, spot: { $in: ['CHV'] } },
@@ -122,7 +182,7 @@ export class ShieldAnalyticsController extends BaseHttpController {
 
       options.push({
         name: 'CHVs Reporting',
-        code: 'SURV.IND.EBS02',
+        code: 'SURV.IND.EBS16',
         unique: 'user',
         type: 'active',
         primary: { units: unit._id, spot: { $in: ['CHV'] } },
@@ -130,8 +190,26 @@ export class ShieldAnalyticsController extends BaseHttpController {
       });
 
       options.push({
+        name: 'CHAs Registered',
+        code: 'SURV.IND.EBS17',
+        unique: 'user',
+        type: 'registered',
+        primary: { units: unit._id, spot: { $in: ['CHA'] } },
+        secondary,
+      });
+
+      options.push({
+        name: 'CHAs Verifying',
+        code: 'SURV.IND.EBS18',
+        unique: 'user',
+        type: 'active',
+        primary: { units: unit._id, spot: { $in: ['CHA'] } },
+        secondary,
+      });
+
+      options.push({
         name: 'HCWs Registered',
-        code: 'SURV.IND.EBS15',
+        code: 'SURV.IND.EBS19',
         unique: 'user',
         type: 'registered',
         primary: { units: unit._id, spot: { $in: ['HCW'] } },
@@ -140,10 +218,28 @@ export class ShieldAnalyticsController extends BaseHttpController {
 
       options.push({
         name: 'HCWs Reporting',
-        code: 'SURV.IND.EBS16',
+        code: 'SURV.IND.EBS20',
         unique: 'user',
         type: 'active',
         primary: { units: unit._id, spot: { $in: ['HCW'] } },
+        secondary,
+      });
+
+      options.push({
+        name: 'SFPs Registered',
+        code: 'SURV.IND.EBS21',
+        unique: 'user',
+        type: 'registered',
+        primary: { units: unit._id, spot: { $in: ['SFP'] } },
+        secondary,
+      });
+
+      options.push({
+        name: 'SFPs Verifying',
+        code: 'SURV.IND.EBS22',
+        unique: 'user',
+        type: 'active',
+        primary: { units: unit._id, spot: { $in: ['SFP'] } },
         secondary,
       });
 
