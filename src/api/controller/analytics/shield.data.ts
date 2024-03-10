@@ -1,7 +1,6 @@
 import { controller, BaseHttpController, httpGet } from 'inversify-express-utils';
 import { celebrate, Joi } from 'celebrate';
 import { inject } from 'inversify';
-import { logger } from '../../../loader/logger';
 import { joi } from '../../../util/joi';
 import { TaskService } from '../../../service/task/task';
 import { Query } from '../../../plugin/types';
@@ -16,7 +15,7 @@ export class ShieldDataController extends BaseHttpController {
     celebrate({
       query: joi.object({
         q: joi.string(),
-        unitId: joi.string(),
+        taskId: joi.string(),
         sort: joi.string(),
         page: joi.number(),
         key: joi.string(),
@@ -57,59 +56,28 @@ export class ShieldDataController extends BaseHttpController {
       query = {
         ...query,
         ...{
-          $or: [
-            {
-              createdAt: {
-                $lte: dateEnd,
-                $gte: dateStart,
-              },
-            },
-
-            {
-              updatedAt: {
-                $lte: dateEnd,
-                $gte: dateStart,
-              },
-            },
-          ],
+          createdAt: {
+            $gt: dateStart,
+            $lte: dateEnd,
+          },
         },
       };
     else if (dateStart)
       query = {
         ...query,
         ...{
-          $or: [
-            {
-              createdAt: {
-                $gte: dateStart,
-              },
-            },
-
-            {
-              updatedAt: {
-                $gte: dateStart,
-              },
-            },
-          ],
+          createdAt: {
+            $gt: dateStart,
+          },
         },
       };
     else if (dateEnd)
       query = {
         ...query,
         ...{
-          $or: [
-            {
-              createdAt: {
-                $lte: dateEnd,
-              },
-            },
-
-            {
-              updatedAt: {
-                $lte: dateEnd,
-              },
-            },
-          ],
+          createdAt: {
+            $lte: dateEnd,
+          },
         },
       };
 

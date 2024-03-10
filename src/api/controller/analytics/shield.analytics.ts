@@ -52,92 +52,32 @@ export class ShieldAnalyticsController extends BaseHttpController {
 
     if (state) match = { ...match, ...{ state } };
 
-    // if (dateStart && dateEnd)
-    //   match = {
-    //     ...match,
-    //     ...{
-    //       createdAt: {
-    //         $gt: dateStart,
-    //         $lte: dateEnd,
-    //       },
-    //     },
-    //   };
-    // else if (dateStart)
-    //   match = {
-    //     ...match,
-    //     ...{
-    //       createdAt: {
-    //         $gt: dateStart,
-    //       },
-    //     },
-    //   };
-    // else if (dateEnd)
-    //   match = {
-    //     ...match,
-    //     ...{
-    //       createdAt: {
-    //         $lte: dateEnd,
-    //       },
-    //     },
-    //   };
-
     if (dateStart && dateEnd)
       match = {
         ...match,
         ...{
-          $or: [
-            {
-              createdAt: {
-                $lte: dateEnd,
-                $gte: dateStart,
-              },
-            },
-
-            {
-              updatedAt: {
-                $lte: dateEnd,
-                $gte: dateStart,
-              },
-            },
-          ],
+          createdAt: {
+            $gt: dateStart,
+            $lte: dateEnd,
+          },
         },
       };
     else if (dateStart)
       match = {
         ...match,
         ...{
-          $or: [
-            {
-              createdAt: {
-                $gte: dateStart,
-              },
-            },
-
-            {
-              updatedAt: {
-                $gte: dateStart,
-              },
-            },
-          ],
+          createdAt: {
+            $gt: dateStart,
+          },
         },
       };
     else if (dateEnd)
       match = {
         ...match,
         ...{
-          $or: [
-            {
-              createdAt: {
-                $lte: dateEnd,
-              },
-            },
-
-            {
-              updatedAt: {
-                $lte: dateEnd,
-              },
-            },
-          ],
+          createdAt: {
+            $lte: dateEnd,
+          },
         },
       };
 
