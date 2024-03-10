@@ -1,2 +1,2 @@
 import './unit';
-import './shield';
+import './shield.unit';
