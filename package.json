@@ -1,6 +1,6 @@
 {
   "name": "m-dharura-api",
-  "version": "21.0.0",
+  "version": "22.0.0",
   "description": "Server for m-dharura.health.go.ke",
   "main": "src/app.ts",
   "author": "kadengeyaa <kadengeyaa@gmail.com>",
@@ -95,8 +95,6 @@
     "string-to-color": "^2.2.2",
     "twilio": "^4.19.0",
     "uniqid": "^5.2.0",
-    "whatsapp-web.js": "^1.23.0",
-    "winston": "^3.3.3",
-    "wwebjs-mongo": "^1.1.0"
+    "winston": "^3.3.3"
   }
 }

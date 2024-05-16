@@ -38,7 +38,7 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
       try {
         logger.info('incomingWhatsapp-created %o', incomingWhatsapp._id);
 
-        const { waId, body: text, from } = incomingWhatsapp;
+        const { waId, body: text } = incomingWhatsapp;
 
         const phoneNumber = `+${waId}`;
 
@@ -77,6 +77,41 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} verification form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'verification',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 await this.taskService.update(task._id, {
@@ -93,6 +128,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS verification form`,
+                    template: {
+                      name: 'verification_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'CEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
 
@@ -111,10 +168,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} risk assessment form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.cebs || !task.cebs.verificationForm)
-                  throw new Error('Please submit verification form before submitting risk assessment form');
+                  throw new Error('Please submit verification form before submitting risk assessment form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'verification',
+                              },
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'cebs.investigationForm': {
@@ -130,6 +248,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS risk assessment form`,
+                    template: {
+                      name: 'investigation_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'CEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -147,10 +287,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} response form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.cebs || !task.cebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting response form');
+                  throw new Error('Please submit risk assessment form before submitting response form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'response',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'cebs.responseForm': {
@@ -166,6 +367,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS response form`,
+                    template: {
+                      name: 'response_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'CEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
 
@@ -182,13 +405,74 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
 
                 if (!SIGNALS.CEBS.includes(task.signal))
                   throw new Error(
-                    `Please submit ${task.getType()} lab form / response form (Signal ID: ${
+                    `Please submit ${task.getType()} risk assessment form / response form (Signal ID: ${
                       task.signalId
                     }, Signal Code: ${task.signal} is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment form / response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
-                if (!task.cebs || !task.cebs.labForm)
-                  throw new Error('Please submit risk assessment form before submitting lab form');
+                if (!task.cebs || !task.cebs.investigationForm)
+                  throw new Error('Please submit risk assessment form before submitting lab form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'lab',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'cebs.labForm': {
@@ -204,6 +488,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS lab form`,
+                    template: {
+                      name: 'lab_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'CEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
 
@@ -220,13 +526,74 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
 
                 if (!SIGNALS.CEBS.includes(task.signal))
                   throw new Error(
-                    `Please submit ${task.getType()} investigation form / response form (Signal ID: ${
+                    `Please submit ${task.getType()} risk assessment form / response form (Signal ID: ${
                       task.signalId
                     }, Signal Code: ${task.signal} is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment form / response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.cebs || !task.cebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting summary form');
+                  throw new Error('Please submit risk assessment form before submitting summary form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'summary',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'cebs.summaryForm': {
@@ -242,6 +609,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS summary form`,
+                    template: {
+                      name: 'summary_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'CEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -260,10 +649,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} escalation form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'escalation',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.cebs || !task.cebs.responseForm)
-                  throw new Error('Please submit response form before submitting escalation form');
+                  throw new Error('Please submit response form before submitting escalation form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'response',
+                              },
+                              {
+                                type: 'text',
+                                text: 'escalation',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'cebs.escalationForm': {
@@ -279,6 +729,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting CEBS escalation form`,
+                    template: {
+                      name: 'escalation_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'CEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -296,6 +768,41 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} verification form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'verification',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 await this.taskService.update(task._id, {
@@ -312,6 +819,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS verification form`,
+                    template: {
+                      name: 'verification_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'HEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -329,10 +858,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} risk assessment form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.hebs || !task.hebs.verificationForm)
-                  throw new Error('Please submit verification form before submitting risk assessment form');
+                  throw new Error('Please submit verification form before submitting risk assessment form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'verification',
+                              },
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'hebs.investigationForm': {
@@ -348,6 +938,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS risk assessment form`,
+                    template: {
+                      name: 'investigation_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'HEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -365,10 +977,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} response form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.hebs || !task.hebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting response form');
+                  throw new Error('Please submit risk assessment form before submitting response form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'response',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'hebs.responseForm': {
@@ -384,6 +1057,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS response form`,
+                    template: {
+                      name: 'response_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'HEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -399,13 +1094,74 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
 
                 if (!SIGNALS.HEBS.includes(task.signal))
                   throw new Error(
-                    `Please submit ${task.getType()} investigation form / response form (Signal ID: ${
+                    `Please submit ${task.getType()} risk assessment form / response form (Signal ID: ${
                       task.signalId
                     }, Signal Code: ${task.signal} is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment form / response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.hebs || !task.hebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting lab form');
+                  throw new Error('Please submit risk assessment form before submitting lab form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'lab',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'hebs.labForm': {
@@ -421,6 +1177,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS lab form`,
+                    template: {
+                      name: 'lab_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'HEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -436,13 +1214,74 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
 
                 if (!SIGNALS.HEBS.includes(task.signal))
                   throw new Error(
-                    `Please submit ${task.getType()} investigation form / response form (Signal ID: ${
+                    `Please submit ${task.getType()} risk assessment form / response form (Signal ID: ${
                       task.signalId
                     }, Signal Code: ${task.signal} is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment form / response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.hebs || !task.hebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting summary form');
+                  throw new Error('Please submit risk assessment form before submitting summary form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'summary',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'hebs.summaryForm': {
@@ -458,6 +1297,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS summary form`,
+                    template: {
+                      name: 'summary_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'HEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -475,10 +1336,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} escalation form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'escalation',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.hebs || !task.hebs.responseForm)
-                  throw new Error('Please submit response form before submitting escalation form');
+                  throw new Error('Please submit response form before submitting escalation form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'response',
+                              },
+                              {
+                                type: 'text',
+                                text: 'escalation',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'hebs.escalationForm': {
@@ -494,6 +1416,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting HEBS escalation form`,
+                    template: {
+                      name: 'escalation_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'HEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -511,6 +1455,41 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} verification form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'verification',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 await this.taskService.update(task._id, {
@@ -527,6 +1506,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS verification form`,
+                    template: {
+                      name: 'verification_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'VEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -544,10 +1545,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} risk assessment form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.vebs || !task.vebs.verificationForm)
-                  throw new Error('Please submit verification form before submitting risk assessment form');
+                  throw new Error('Please submit verification form before submitting risk assessment form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'verification',
+                              },
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'vebs.investigationForm': {
@@ -558,6 +1620,35 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     ...(form as any),
                   },
                 });
+
+                try {
+                  this.whatsappService.send({
+                    to: phoneNumber,
+                    message: `Hi ${displayName}. Thank you for submitting VEBS risk assessment form`,
+                    template: {
+                      name: 'investigation_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'VEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  });
+                } catch (e) {}
 
                 return;
               case `${SMS_PREFIX}vr`:
@@ -574,10 +1665,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} response form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.vebs || !task.vebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting response form');
+                  throw new Error('Please submit risk assessment form before submitting response form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'response',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'vebs.responseForm': {
@@ -593,6 +1745,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS response form`,
+                    template: {
+                      name: 'response_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'VEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -608,13 +1782,74 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
 
                 if (!SIGNALS.VEBS.includes(task.signal))
                   throw new Error(
-                    `Please submit ${task.getType()} investigation form (Signal ID: ${task.signalId}, Signal Code: ${
-                      task.signal
-                    } is for ${task.getType()})`,
+                    `Please submit ${task.getType()} risk assessment form / response form (Signal ID: ${
+                      task.signalId
+                    }, Signal Code: ${task.signal} is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment form / response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.vebs || !task.vebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting lab form');
+                  throw new Error('Please submit risk assessment form before submitting lab form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'lab',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'vebs.labForm': {
@@ -630,6 +1865,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS lab form`,
+                    template: {
+                      name: 'lab_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'VEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -645,13 +1902,74 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
 
                 if (!SIGNALS.VEBS.includes(task.signal))
                   throw new Error(
-                    `Please submit ${task.getType()} investigation form / response form (Signal ID: ${
+                    `Please submit ${task.getType()} risk assessment form / response form (Signal ID: ${
                       task.signalId
                     }, Signal Code: ${task.signal} is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment form / response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.vebs || !task.vebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting summary form');
+                  throw new Error('Please submit risk assessment form before submitting summary form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'summary',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'vebs.summaryForm': {
@@ -667,6 +1985,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS summary form`,
+                    template: {
+                      name: 'summary_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'VEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -684,10 +2024,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} escalation form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'escalation',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.vebs || !task.vebs.responseForm)
-                  throw new Error('Please submit response form before submitting escalation form');
+                  throw new Error('Please submit response form before submitting escalation form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'response',
+                              },
+                              {
+                                type: 'text',
+                                text: 'escalation',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'vebs.escalationForm': {
@@ -703,6 +2104,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting VEBS escalation form`,
+                    template: {
+                      name: 'escalation_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'VEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -720,6 +2143,41 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} verification form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'verification',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 await this.taskService.update(task._id, {
@@ -736,6 +2194,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS verification form`,
+                    template: {
+                      name: 'verification_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'LEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -753,10 +2233,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} risk assessment form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.lebs || !task.lebs.verificationForm)
-                  throw new Error('Please submit verification form before submitting risk assessment form');
+                  throw new Error('Please submit verification form before submitting risk assessment form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'verification',
+                              },
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'lebs.investigationForm': {
@@ -772,6 +2313,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS risk assessment form`,
+                    template: {
+                      name: 'investigation_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'LEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -789,10 +2352,71 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                     `Please submit ${task.getType()} response form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.lebs || !task.lebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting response form');
+                  throw new Error('Please submit risk assessment form before submitting response form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'response',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'lebs.responseForm': {
@@ -808,6 +2432,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS response form`,
+                    template: {
+                      name: 'response_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'LEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -823,13 +2469,74 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
 
                 if (!SIGNALS.LEBS.includes(task.signal))
                   throw new Error(
-                    `Please submit ${task.getType()} investigation form (Signal ID: ${task.signalId}, Signal Code: ${
+                    `Please submit ${task.getType()} risk assessment form (Signal ID: ${task.signalId}, Signal Code: ${
                       task.signal
                     } is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment form / response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.lebs || !task.lebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting lab form');
+                  throw new Error('Please submit risk assessment form before submitting lab form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'lab',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'lebs.labForm': {
@@ -845,6 +2552,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS lab form`,
+                    template: {
+                      name: 'lab_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'LEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -860,13 +2589,74 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
 
                 if (!SIGNALS.LEBS.includes(task.signal))
                   throw new Error(
-                    `Please submit ${task.getType()} investigation form / response form (Signal ID: ${
+                    `Please submit ${task.getType()} risk assessment form / response form (Signal ID: ${
                       task.signalId
                     }, Signal Code: ${task.signal} is for ${task.getType()})`,
+                    {
+                      cause: {
+                        name: 'form_error',
+                        template: {
+                          name: 'form_error',
+                          language: {
+                            code: 'en',
+                            policy: 'deterministic',
+                          },
+                          components: [
+                            {
+                              type: 'body',
+                              parameters: [
+                                {
+                                  type: 'text',
+                                  text: task.getType(),
+                                },
+                                {
+                                  type: 'text',
+                                  text: 'risk assessment form / response',
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signalId,
+                                },
+                                {
+                                  type: 'text',
+                                  text: task.signal,
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      },
+                    },
                   );
 
                 if (!task.lebs || !task.lebs.investigationForm)
-                  throw new Error('Please submit risk assessment form before submitting summary form');
+                  throw new Error('Please submit risk assessment form before submitting summary form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'risk assessment',
+                              },
+                              {
+                                type: 'text',
+                                text: 'summary',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'lebs.summaryForm': {
@@ -882,6 +2672,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS summary form`,
+                    template: {
+                      name: 'summary_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'LEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -895,10 +2707,70 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                 task = await this.taskService.findOne({ signalId });
 
                 if (!SIGNALS.LEBS.includes(task.signal))
-                  throw new Error(`Please submit ${task.getType()} escalation form`);
+                  throw new Error(`Please submit ${task.getType()} escalation form`, {
+                    cause: {
+                      name: 'form_error',
+                      template: {
+                        name: 'form_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: task.getType(),
+                              },
+                              {
+                                type: 'text',
+                                text: 'escalation',
+                              },
+                              {
+                                type: 'text',
+                                text: task.signalId,
+                              },
+                              {
+                                type: 'text',
+                                text: task.signal,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 if (!task.lebs || !task.lebs.responseForm)
-                  throw new Error('Please submit response form before submitting escalation form');
+                  throw new Error('Please submit response form before submitting escalation form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'response',
+                              },
+                              {
+                                type: 'text',
+                                text: 'escalation',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 await this.taskService.update(task._id, {
                   'lebs.escalationForm': {
@@ -914,6 +2786,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting LEBS escalation form`,
+                    template: {
+                      name: 'escalation_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'LEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -966,7 +2860,33 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                 task = await this.taskService.findOne({ signalId });
 
                 if (!task.pmebs || !task.pmebs.reportForm)
-                  throw new Error('Please submit report form before submitting verification request form');
+                  throw new Error('Please submit report form before submitting verification request form', {
+                    cause: {
+                      name: 'form_submit_error',
+                      template: {
+                        name: 'form_submit_error',
+                        language: {
+                          code: 'en',
+                          policy: 'deterministic',
+                        },
+                        components: [
+                          {
+                            type: 'body',
+                            parameters: [
+                              {
+                                type: 'text',
+                                text: 'report',
+                              },
+                              {
+                                type: 'text',
+                                text: 'verification request',
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  });
 
                 task = await this.taskService.update(task._id, {
                   'pmebs.requestForm': {
@@ -984,6 +2904,28 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
                   this.whatsappService.send({
                     to: phoneNumber,
                     message: `Hi ${displayName}. Thank you for submitting PEBS/MEBS verification request form`,
+                    template: {
+                      name: 'verification_form_submit',
+                      language: {
+                        code: 'en',
+                        policy: 'deterministic',
+                      },
+                      components: [
+                        {
+                          type: 'body',
+                          parameters: [
+                            {
+                              type: 'text',
+                              text: displayName,
+                            },
+                            {
+                              type: 'text',
+                              text: 'PEBS/MEBS',
+                            },
+                          ],
+                        },
+                      ],
+                    },
                   });
                 } catch (e) {}
                 return;
@@ -1010,10 +2952,25 @@ export class IncomingWhatsappEventEmitter extends EventEmitter {
 
         const phoneNumber = `+${waId}`;
         try {
-          await this.whatsappService.send({
-            to: phoneNumber,
-            message: (error as Error).message,
-          });
+          if ((error as Error).cause != null) {
+            await this.whatsappService.send({
+              to: phoneNumber,
+              message: (error as Error).message,
+              template: ((error as Error).cause as any).template,
+            });
+          } else {
+            await this.whatsappService.send({
+              to: phoneNumber,
+              message: (error as Error).message,
+              template: {
+                name: 'permission',
+                language: {
+                  code: 'en_US',
+                  policy: 'deterministic',
+                },
+              },
+            });
+          }
         } catch (e) {}
 
         logger.error('incomingWhatsapp-created %o', (error as Error).message);
