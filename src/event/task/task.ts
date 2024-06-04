@@ -50,12 +50,13 @@ export class TaskEventEmitter extends EventEmitter {
             .format('llll')}`,
         });
 
-        await this.whatsappService.send({
-          to: phoneNumber,
-          message: `Thank you ${displayName} for reporting signal ${signal.toUpperCase()}.\nSignal ID ${signalId}\nDated: ${moment
-            .tz(createdAt, moment.tz.zonesForCountry('KE')[0])
-            .format('llll')}`,
-        });
+        //TODO: Refactor this once template is approved on whatsapp api
+        // await this.whatsappService.send({
+        //   to: phoneNumber,
+        //   message: `Thank you ${displayName} for reporting signal ${signal.toUpperCase()}.\nSignal ID ${signalId}\nDated: ${moment
+        //     .tz(createdAt, moment.tz.zonesForCountry('KE')[0])
+        //     .format('llll')}`,
+        // });
       } catch (error) {
         logger.error('task-created %o', (error as Error).message);
       }

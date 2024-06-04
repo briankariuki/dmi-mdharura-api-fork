@@ -344,4 +344,29 @@ export class TaskService {
 
     return docs;
   }
+
+  async units(query: Query): Promise<Record<string, unknown>[]> {
+    const docs = TaskModel.aggregate([
+      {
+        $match: query,
+      },
+      {
+        $group: {
+          _id: {
+            unit: '$unit',
+          },
+          unit: { $first: '$unit' },
+        },
+      },
+
+      {
+        $project: {
+          _id: null,
+          unit: 1,
+        },
+      },
+    ]);
+
+    return docs;
+  }
 }
