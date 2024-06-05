@@ -141,7 +141,7 @@ export class TaskController extends BaseHttpController {
       user: { details: _userId },
     } = this.httpContext;
 
-    const { unitId: unit, dateStart, dateEnd } = (this.httpContext.request.query as unknown) as Record<string, any>;
+    const { unitId: unit, dateStart, dateEnd } = this.httpContext.request.query as unknown as Record<string, any>;
 
     await (await this.userService.findById(_userId)).can({ access: 'manage-unit', resource: unit });
 
@@ -221,8 +221,8 @@ export class TaskController extends BaseHttpController {
     }),
   )
   async units(): Promise<void> {
-    const { _status, userId, type, status, state, dateStart, dateEnd } = (this.httpContext.request
-      .query as unknown) as Record<string, any>;
+    const { _status, userId, type, status, state, dateStart, dateEnd } = this.httpContext.request
+      .query as unknown as Record<string, any>;
 
     let query: Query = {};
 
@@ -454,8 +454,8 @@ export class TaskController extends BaseHttpController {
       return;
     }
 
-    const { sort, page, limit, q, _status, userId, key, unitId, type, status, state, dateStart, dateEnd } = (this
-      .httpContext.request.query as unknown) as Record<string, any>;
+    const { sort, page, limit, q, _status, userId, key, unitId, type, status, state, dateStart, dateEnd } = this
+      .httpContext.request.query as unknown as Record<string, any>;
 
     let query: Query = {};
 

@@ -973,7 +973,7 @@ export class IncomingSmsEventEmitter extends EventEmitter {
                     via: 'sms',
                   },
                   via: 'sms',
-                  state: subCounty._id,
+                  state: subCounty.state,
                   version: '2',
                 });
 
