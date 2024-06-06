@@ -68,12 +68,13 @@ export class UserController extends BaseHttpController {
       throw new Error('Problem sending sms with the verification. Try again');
     }
 
-    try {
-      await this.whatsappService.send({
-        to: phoneNumber,
-        message: `${smsCode} is your ${PROJECT_NAME} verification code`,
-      });
-    } catch (error) {}
+    //TODO: Refactor this once template is approved on whatsapp api
+    // try {
+    //   await this.whatsappService.send({
+    //     to: phoneNumber,
+    //     message: `${smsCode} is your ${PROJECT_NAME} verification code`,
+    //   });
+    // } catch (error) {}
 
     response.json({ token, user });
   }

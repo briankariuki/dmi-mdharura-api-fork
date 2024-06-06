@@ -13,14 +13,6 @@ import { AuthProvider } from './api/provider/auth';
 import { AddressInfo } from 'net';
 import { SystemService } from './service/system/system';
 import stc from 'string-to-color';
-import initWhatsappWebClient from './loader/whatsapp-web';
-import qrcode from 'qrcode-terminal';
-import { IncomingWhatsappService } from './service/whatsapp/incomingWhatsapp';
-import { Client } from 'whatsapp-web.js';
-
-import { WHATSAPP_WEB_CLIENT_PHONE_NUMBER, WHATSAPP_WEB_CLIENT_STATUS } from './config/whatsapp';
-import { connectRedis, redisClient } from './loader/redis';
-import { REDIS_MDHARURA_STREAM } from './config/redis';
 
 String.prototype.toHex = function () {
   return stc(this);
@@ -36,8 +28,6 @@ process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
   logger.error('UNHANDLED_REJECTION: Reason: %o', reason);
   logger.error('UNHANDLED_REJECTION: Promise: %o', promise);
 });
-
-let whatsappClient: Client;
 
 async function serve(): Promise<void> {
   await initDb();
@@ -57,49 +47,6 @@ async function serve(): Promise<void> {
   logger.debug(render(getRouteInfo(container)));
 
   logger.info('APP_LOADED');
-
-  connectRedis();
-
-  if (WHATSAPP_WEB_CLIENT_STATUS === 'enabled' && process.env.NODE_APP_INSTANCE === '0') {
-    whatsappClient = initWhatsappWebClient();
-
-    whatsappClient.on('qr', (qr) => {
-      logger.info('WHATSAPP_WEB_CLIENT_QR_CODE_RECEIVED');
-
-      qrcode.generate(qr, { small: true });
-    });
-
-    whatsappClient.on('ready', async () => {
-      logger.info('WHATSAPP_WEB_CLIENT_READY');
-
-      listenForMessage();
-    });
-
-    whatsappClient.on('message', async (message) => {
-      if (message.isStatus == false && message.author == null && message.hasMedia == false) {
-        logger.info('WHATSAPP_WEB_CLIENT_MESSAGE_RECEIVED');
-
-        await container.get(IncomingWhatsappService).create({
-          smsMessageSid: message.id.id,
-          numMedia: '0',
-          profileName: message.author ?? message.from,
-          smsSid: message.id.id,
-          waId: (message.author ?? message.from).split('@')[0],
-          smsStatus: 'received',
-          body: message.body,
-          to: message.to,
-          numSegments: '1',
-          referralNumMedia: '0',
-          messageSid: message.id.id,
-          accountSid: '',
-          from: message.from,
-          apiVersion: 'whatsapp-web-client',
-        });
-      }
-    });
-
-    whatsappClient.initialize();
-  }
 
   const server = http.createServer(app);
 
@@ -121,48 +68,3 @@ async function serve(): Promise<void> {
 }
 
 serve();
-
-async function sendWhatsappMessage(chatId: string, message: string) {
-  const sent = await whatsappClient.sendMessage(chatId, message);
-
-  return sent;
-}
-
-async function processMessage(message: [id: string, fields: string[]]) {
-  try {
-    const [to, text] = message[1];
-    //Send notification message via whatsapp
-    await sendWhatsappMessage(to, text);
-
-    logger.warn('whatsapp-sent %o', {
-      to: to,
-      message: text,
-      from: `whatsapp-web-client:${WHATSAPP_WEB_CLIENT_PHONE_NUMBER}`,
-    });
-  } catch (error) {}
-
-  //Remove the message from the redis queue
-  await redisClient.xdel(REDIS_MDHARURA_STREAM, message[0]);
-}
-
-async function listenForMessage(lastId = '0') {
-  //Read notifications from the queue
-  const results = await redisClient.xread('COUNT', 10, 'STREAMS', REDIS_MDHARURA_STREAM, lastId);
-
-  if (results != null) {
-    const [_key, messages] = results[0];
-
-    // Process all pending messsages
-    await Promise.allSettled(messages.map(processMessage));
-
-    setTimeout(async () => {
-      // Pass the last id of the results to the next round.
-      await listenForMessage(messages[messages.length - 1][0]);
-    }, 10000);
-  } else {
-    setTimeout(async () => {
-      // Pass the last id of the results to the next round.
-      await listenForMessage(lastId);
-    }, 10000);
-  }
-}

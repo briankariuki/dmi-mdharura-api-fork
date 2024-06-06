@@ -1,5 +1,8 @@
 import { injectable } from 'inversify';
-import { credential, initializeApp, apps } from 'firebase-admin';
+import { credential, apps } from 'firebase-admin';
+import { initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getMessaging } from 'firebase-admin/messaging';
 import { logger } from '../../loader/logger';
 import { PROJECT_NAME } from '../../config/project';
 
@@ -13,7 +16,7 @@ export class FirebaseService {
       : apps[0];
 
   async getUid(token: string): Promise<string> {
-    const decodedIdToken = await this.admin.auth().verifyIdToken(token);
+    const decodedIdToken = await getAuth(this.admin).verifyIdToken(token);
 
     return decodedIdToken.uid;
   }
@@ -21,7 +24,7 @@ export class FirebaseService {
   async sendMessage(data: { deviceId: string; message: string }): Promise<void> {
     const { deviceId, message } = data;
 
-    await this.admin.messaging().sendToDevice(deviceId, {
+    await getMessaging(this.admin).sendToDevice(deviceId, {
       notification: {
         title: PROJECT_NAME,
         body: message,
@@ -30,7 +33,7 @@ export class FirebaseService {
   }
 
   async getUser(uid: string): Promise<{ displayName: string; email: string; phoneNumber: string; photoURL: string }> {
-    const response = await this.admin.auth().getUser(uid);
+    const response = await getAuth(this.admin).getUser(uid);
 
     logger.info('firebase-getUser-response : %o', response);
 
@@ -45,7 +48,7 @@ export class FirebaseService {
     displayName: string;
     phoneNumber: string;
   }): Promise<{ displayName: string; email: string; uid: string; phoneNumber: string }> {
-    const response = await this.admin.auth().createUser(data);
+    const response = await getAuth(this.admin).createUser(data);
     logger.info('firebase-addUser-response : %o', response);
 
     const { displayName, email, uid, phoneNumber } = response;

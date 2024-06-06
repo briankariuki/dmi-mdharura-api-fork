@@ -110,21 +110,6 @@ export class TaskAnalyticsService {
           responded: {
             $cond: [
               {
-                // $or: [
-                //   {
-                //     $gt: ['$cebs.responseForm', null],
-                //   },
-                //   {
-                //     $gt: ['$hebs.responseForm', null],
-                //   },
-                //   {
-                //     $gt: ['$vebs.responseForm', null],
-                //   },
-                //   {
-                //     $gt: ['$lebs.responseForm', null],
-                //   },
-                // ],
-
                 $or: [
                   {
                     $and: [
@@ -232,16 +217,87 @@ export class TaskAnalyticsService {
               {
                 $or: [
                   {
-                    $gt: ['$cebs.escalationForm', null],
+                    $and: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $setIntersection: [
+                                { $ifNull: ['$hebs.responseForm.recommendations', []] },
+                                ['Escalate to higher level'],
+                              ],
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      {
+                        $gt: ['$hebs.escalationForm', null],
+                      },
+                    ],
                   },
+
                   {
-                    $gt: ['$hebs.escalationForm', null],
+                    $and: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $setIntersection: [
+                                { $ifNull: ['$cebs.responseForm.recommendations', []] },
+                                ['Escalate to higher level'],
+                              ],
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      {
+                        $gt: ['$cebs.escalationForm', null],
+                      },
+                    ],
                   },
+
                   {
-                    $gt: ['$vebs.escalationForm', null],
+                    $and: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $setIntersection: [
+                                { $ifNull: ['$vebs.responseForm.recommendations', []] },
+                                ['Escalate to higher level'],
+                              ],
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      {
+                        $gt: ['$vebs.escalationForm', null],
+                      },
+                    ],
                   },
+
                   {
-                    $gt: ['$lebs.escalationForm', null],
+                    $and: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $setIntersection: [
+                                { $ifNull: ['$lebs.responseForm.recommendations', []] },
+                                ['Escalate to higher level'],
+                              ],
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      {
+                        $gt: ['$lebs.escalationForm', null],
+                      },
+                    ],
                   },
                 ],
               },
