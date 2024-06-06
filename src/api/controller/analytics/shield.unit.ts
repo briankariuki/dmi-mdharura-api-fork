@@ -69,6 +69,7 @@ export class ShieldUnitController extends BaseHttpController {
       sort: sort || 'state name',
       page,
       limit,
+      populate: [{ path: 'parent', populate: [{ path: 'parent' }] }],
     });
 
     this.httpContext.response.json({ unitPage });

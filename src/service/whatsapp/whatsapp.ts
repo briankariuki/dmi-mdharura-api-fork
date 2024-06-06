@@ -2,22 +2,37 @@ import { injectable } from 'inversify';
 import { isArray } from 'lodash';
 import { logger } from '../../loader/logger';
 import { TWILIO_PHONE_NUMBER, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_STATUS } from '../../config/twilio';
-import { WHATSAPP_WEB_CLIENT_PHONE_NUMBER, WHATSAPP_WEB_CLIENT_STATUS } from '../../config/whatsapp';
-import { Twilio } from 'twilio';
-import { redisClient } from '../../loader/redis';
-import { REDIS_MDHARURA_STREAM } from '../../config/redis';
+import {
+  WHATSAPP_BUSINESS_API_ACCOUNT_ID,
+  WHATSAPP_BUSINESS_API_PHONE_ID,
+  WHATSAPP_BUSINESS_API_TOKEN,
+  WHATSAPP_BUSINESS_API_STATUS,
+  WHATSAPP_BUSINESS_API_VERSION,
+} from '../../config/whatsapp';
 
-const client = TWILIO_STATUS === 'enabled' ? new Twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) : undefined;
+import { Twilio } from 'twilio';
+import axios from 'axios';
+import { DefaultResponse, Message, SendMessageResponse, TemplateMessage } from '../../types/whatsapp';
+
+const whatsappBusinessApi = axios.create({
+  baseURL: `https://graph.facebook.com/${WHATSAPP_BUSINESS_API_VERSION}/${WHATSAPP_BUSINESS_API_PHONE_ID}/`,
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${WHATSAPP_BUSINESS_API_TOKEN}`,
+  },
+});
+
+const twilioClient = TWILIO_STATUS === 'enabled' ? new Twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) : undefined;
 
 @injectable()
 export class WhatsappService {
-  async send(params: { to: string | string[]; message: string }): Promise<void> {
-    const { to, message } = params;
+  async send(params: { to: string | string[]; message: string; template?: TemplateMessage }): Promise<void> {
+    const { to, message, template } = params;
 
     let phoneNumbers: string[] = [];
 
-    if (!isArray(to)) phoneNumbers.push(to);
-    else phoneNumbers = to;
+    if (!isArray(to)) phoneNumbers.push(to as string);
+    else phoneNumbers = to as string[];
 
     phoneNumbers = phoneNumbers.map((phoneNumber) => {
       if (phoneNumber.startsWith('0')) return `+254${phoneNumber.substring(1)}`;
@@ -38,7 +53,7 @@ export class WhatsappService {
             },
           });
 
-          await client.messages.create({
+          await twilioClient.messages.create({
             body: message,
             to: `whatsapp:${phoneNumber}`,
             from: `whatsapp:${TWILIO_PHONE_NUMBER}`,
@@ -46,21 +61,41 @@ export class WhatsappService {
         } catch (error) {}
       }
 
-      if (WHATSAPP_WEB_CLIENT_STATUS === 'enabled') {
+      if (WHATSAPP_BUSINESS_API_STATUS === 'enabled') {
         try {
-          logger.warn('whatsapp-queued %o', {
+          logger.warn('whatsapp-sending %o', {
             ...params,
             ...{
               to: phoneNumber,
-              from: `whatsapp-web-client:${WHATSAPP_WEB_CLIENT_PHONE_NUMBER}`,
+              from: `whatsapp-business-api:${WHATSAPP_BUSINESS_API_ACCOUNT_ID}`,
             },
           });
 
-          //Example ChatId: 254701234567@c.us
-          //Queue whatsapp notification in redis stream
-          await redisClient.xadd(REDIS_MDHARURA_STREAM, '*', `${phoneNumber.substring(1)}@c.us`, message);
-        } catch (error) {}
+          await this.sendWhatsappMessage({ to: `${phoneNumber.substring(1)}`, template: template, type: 'template' });
+        } catch (error) {
+          console.log(error);
+        }
       }
     }
+  }
+  async sendWhatsappMessage({ to, type, template }: Omit<Message, 'messaging_product'>): Promise<SendMessageResponse> {
+    const { data } = await whatsappBusinessApi.post('messages', {
+      messaging_product: 'whatsapp',
+      to,
+      type,
+      template: template,
+    });
+
+    return data;
+  }
+
+  async markWhatsappMessageAsRead(messageId: string): Promise<DefaultResponse> {
+    const { data } = await whatsappBusinessApi.post('messages', {
+      messaging_product: 'whatsapp',
+      status: 'read',
+      message_id: messageId,
+    });
+
+    return data;
   }
 }

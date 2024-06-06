@@ -1,12 +1,89 @@
-import { controller, BaseHttpController, httpPost } from 'inversify-express-utils';
+import { controller, BaseHttpController, httpPost, httpGet } from 'inversify-express-utils';
 import { celebrate, Joi } from 'celebrate';
 import { inject } from 'inversify';
 import { IncomingWhatsappService } from '../../../service/whatsapp/incomingWhatsapp';
+import { WhatsappService } from '../../../service/whatsapp/whatsapp';
+import {
+  WHATSAPP_BUSINESS_API_PHONE_ID,
+  WHATSAPP_BUSINESS_API_WEBHOOK_VALIDATION_TOKEN,
+} from '../../../config/whatsapp';
 
 @controller('/v1/whatsapp')
 export class WhatsappController extends BaseHttpController {
   @inject(IncomingWhatsappService)
   incomingWhatsappService: IncomingWhatsappService;
+
+  @inject(WhatsappService)
+  whatsappService: WhatsappService;
+
+  @httpPost(
+    '/webhook',
+    celebrate({
+      body: Joi.object({
+        object: Joi.string().required(),
+        entry: Joi.array().required(),
+      }),
+    }),
+  )
+  async webhook(): Promise<void> {
+    const {
+      response,
+      request: {
+        body: { object, entry },
+      },
+    } = this.httpContext;
+
+    entry.forEach((entryMessage: { changes: any[] }) => {
+      entryMessage?.changes?.forEach((change) => {
+        change?.value?.messages?.forEach(
+          async (message: { type: string; text: { body: string }; id: string; from: string }) => {
+            const contact = change?.value?.contacts[0];
+
+            if (message.type === 'text' && message.text) {
+              await this.incomingWhatsappService.create({
+                smsMessageSid: message.id.toString(),
+                numMedia: '0',
+                profileName: contact.profile.name,
+                smsSid: message.id.toString(),
+                waId: contact.wa_id,
+                smsStatus: 'received',
+                body: message.text.body,
+                to: WHATSAPP_BUSINESS_API_PHONE_ID,
+                numSegments: '1',
+                referralNumMedia: '0',
+                messageSid: message.id.toString(),
+                accountSid: '',
+                from: message.from,
+                apiVersion: 'whatsapp-business-api',
+              });
+
+              try {
+                await this.whatsappService.markWhatsappMessageAsRead(message.id.toString());
+              } catch (error) {}
+            }
+          },
+        );
+      });
+    });
+
+    response.json({});
+  }
+
+  @httpGet('/webhook')
+  async webhookVerify(): Promise<void> {
+    const {
+      response,
+      request: {
+        query: { 'hub.mode': hub_mode, 'hub.challenge': hub_challenge, 'hub.verify_token': hub_verify_token },
+      },
+    } = this.httpContext;
+
+    if (hub_mode == 'subscribe' && hub_verify_token == WHATSAPP_BUSINESS_API_WEBHOOK_VALIDATION_TOKEN) {
+      response.send(hub_challenge);
+    } else {
+      response.status(400).send();
+    }
+  }
 
   @httpPost(
     '/incoming',

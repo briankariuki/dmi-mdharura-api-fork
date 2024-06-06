@@ -110,21 +110,6 @@ export class TaskAnalyticsService {
           responded: {
             $cond: [
               {
-                // $or: [
-                //   {
-                //     $gt: ['$cebs.responseForm', null],
-                //   },
-                //   {
-                //     $gt: ['$hebs.responseForm', null],
-                //   },
-                //   {
-                //     $gt: ['$vebs.responseForm', null],
-                //   },
-                //   {
-                //     $gt: ['$lebs.responseForm', null],
-                //   },
-                // ],
-
                 $or: [
                   {
                     $and: [
@@ -232,16 +217,87 @@ export class TaskAnalyticsService {
               {
                 $or: [
                   {
-                    $gt: ['$cebs.escalationForm', null],
+                    $and: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $setIntersection: [
+                                { $ifNull: ['$hebs.responseForm.recommendations', []] },
+                                ['Escalate to higher level'],
+                              ],
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      {
+                        $gt: ['$hebs.escalationForm', null],
+                      },
+                    ],
                   },
+
                   {
-                    $gt: ['$hebs.escalationForm', null],
+                    $and: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $setIntersection: [
+                                { $ifNull: ['$cebs.responseForm.recommendations', []] },
+                                ['Escalate to higher level'],
+                              ],
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      {
+                        $gt: ['$cebs.escalationForm', null],
+                      },
+                    ],
                   },
+
                   {
-                    $gt: ['$vebs.escalationForm', null],
+                    $and: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $setIntersection: [
+                                { $ifNull: ['$vebs.responseForm.recommendations', []] },
+                                ['Escalate to higher level'],
+                              ],
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      {
+                        $gt: ['$vebs.escalationForm', null],
+                      },
+                    ],
                   },
+
                   {
-                    $gt: ['$lebs.escalationForm', null],
+                    $and: [
+                      {
+                        $gt: [
+                          {
+                            $size: {
+                              $setIntersection: [
+                                { $ifNull: ['$lebs.responseForm.recommendations', []] },
+                                ['Escalate to higher level'],
+                              ],
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                      {
+                        $gt: ['$lebs.escalationForm', null],
+                      },
+                    ],
                   },
                 ],
               },
@@ -383,43 +439,43 @@ export class TaskAnalyticsService {
       if (type === 'CEBS') {
         _indicators.push({
           name: 'CEBS Signals Reported',
-          code: 'SURV.IND.EBS04',
+          code: 'SURV.IND.EBS01',
           value: _aggregate[0].reported,
         });
 
         _indicators.push({
           name: 'CEBS Signals Verified',
-          code: 'SURV.IND.EBS05',
+          code: 'SURV.IND.EBS02',
           value: _aggregate[0].verified,
         });
 
         _indicators.push({
           name: 'CEBS Signals Verified True',
-          code: 'SURV.IND.EBS07',
+          code: 'SURV.IND.EBS03',
           value: _aggregate[0].verifiedTrue,
         });
 
         _indicators.push({
           name: 'CEBS Signals Risk Assessed',
-          code: 'SURV.IND.EBS09',
+          code: 'SURV.IND.EBS04',
           value: _aggregate[0].investigated,
         });
 
         _indicators.push({
           name: 'CEBS Signals Responded',
-          code: 'SURV.IND.EBS11',
+          code: 'SURV.IND.EBS05',
           value: _aggregate[0].responded,
         });
 
         _indicators.push({
           name: 'CEBS Signals To Be Escalated',
-          code: 'SURV.IND.EBS13',
+          code: 'SURV.IND.EBS06',
           value: _aggregate[0].toBeEscalated,
         });
 
         _indicators.push({
           name: 'CEBS Signals Escalated',
-          code: 'SURV.IND.EBS13',
+          code: 'SURV.IND.EBS07',
           value: _aggregate[0].escalated,
         });
       }
@@ -427,43 +483,43 @@ export class TaskAnalyticsService {
       if (type === 'HEBS') {
         _indicators.push({
           name: 'HEBS Signals Reported',
-          code: 'SURV.IND.EBS18',
+          code: 'SURV.IND.EBS08',
           value: _aggregate[0].reported,
         });
 
         _indicators.push({
           name: 'HEBS Signals Verified',
-          code: 'SURV.IND.EBS19',
+          code: 'SURV.IND.EBS09',
           value: _aggregate[0].verified,
         });
 
         _indicators.push({
           name: 'HEBS Signals Verified True',
-          code: 'SURV.IND.EBS21',
+          code: 'SURV.IND.EBS10',
           value: _aggregate[0].verifiedTrue,
         });
 
         _indicators.push({
           name: 'HEBS Signals Risk Assessed',
-          code: 'SURV.IND.EBS23',
+          code: 'SURV.IND.EBS11',
           value: _aggregate[0].investigated,
         });
 
         _indicators.push({
           name: 'HEBS Signals Responded',
-          code: 'SURV.IND.EBS25',
+          code: 'SURV.IND.EBS12',
           value: _aggregate[0].responded,
         });
 
         _indicators.push({
           name: 'HEBS Signals To Be Escalated',
-          code: 'SURV.IND.EBS27',
+          code: 'SURV.IND.EBS13',
           value: _aggregate[0].toBeEscalated,
         });
 
         _indicators.push({
           name: 'HEBS Signals Escalated',
-          code: 'SURV.IND.EBS27',
+          code: 'SURV.IND.EBS14',
           value: _aggregate[0].escalated,
         });
       }

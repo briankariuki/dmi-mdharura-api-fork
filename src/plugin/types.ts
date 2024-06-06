@@ -35,6 +35,7 @@ export interface SearchableModel<T extends Document> extends Model<T> {
   search(query: any, options: any, callback: any): Promise<T[]>;
   createMapping(settings: any, callback: any): any;
   bulkError(): any;
+  bulkWrite(): any;
   synchronize(): any;
   esTruncate(callback: any): any;
 }
