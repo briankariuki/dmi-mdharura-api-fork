@@ -1,0 +1,13 @@
+node_modules
+build
+.env
+*.log*
+ecosystem.config.js
+*.DS_Store
+.history
+files
+firebase.json
+.env.copy
+
+.wwebjs_auth
+.wwebjs_cache
