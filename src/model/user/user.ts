@@ -64,6 +64,9 @@ const userSchema = new Schema(
 
 userSchema.plugin(defaultPlugin, { searchable: true });
 
+userSchema.index({ phoneNumber: 1 });
+userSchema.index({ status: 1 });
+
 async function addFields(): Promise<void> {
   const doc = this as UserDocument;
 
@@ -283,7 +286,7 @@ async function units(): Promise<UnitDocument[]> {
 
   let children: UnitDocument[] = [];
 
-  const _children: UnitDocument[] = roles.map((role) => (role.unit as unknown) as UnitDocument);
+  const _children: UnitDocument[] = roles.map((role) => role.unit as unknown as UnitDocument);
 
   children = [...children, ..._children];
 

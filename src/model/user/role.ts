@@ -85,6 +85,12 @@ roleSchema.plugin(defaultPlugin, { searchable: true });
 
 roleSchema.index({ user: 1, unit: 1, spot: 1 }, { unique: true });
 
+roleSchema.index({ unit: 1 });
+roleSchema.index({ units: 1 });
+roleSchema.index({ user: 1 });
+roleSchema.index({ spot: 1 });
+roleSchema.index({ status: 1 });
+
 async function addFields(): Promise<void> {
   const doc = this as RoleDocument;
 

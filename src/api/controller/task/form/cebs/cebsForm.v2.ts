@@ -202,6 +202,12 @@ export class CebsFormControllerV2 extends BaseHttpController {
     if (!task.cebs || !task.cebs.investigationForm)
       throw new Error('Please submit risk assessment form before submitting summary form');
 
+    if (!task.cebs || !task.cebs.responseForm)
+      throw new Error('Please submit response form before submitting summary form');
+
+    if (task.cebs.responseForm?.recommendations.includes('Escalate to higher level') && !task.cebs.escalationForm)
+      throw new Error('Please submit escalation form before submitting summary form');
+
     task = await this.taskService.update(task._id, {
       'cebs.summaryForm': {
         ...{
@@ -242,6 +248,11 @@ export class CebsFormControllerV2 extends BaseHttpController {
     if (!task.cebs || !task.cebs.responseForm)
       throw new Error('Please submit response form before submitting escalation form');
 
+    if (task.cebs.responseForm && !task.cebs.responseForm.recommendations.includes('Escalate to higher level'))
+      throw new Error(
+        'Escalation form is only available for events that require escalating to higher level as one of the recommendations in the response form',
+      );
+
     task = await this.taskService.update(task._id, {
       'cebs.escalationForm': {
         ...{
@@ -251,6 +262,10 @@ export class CebsFormControllerV2 extends BaseHttpController {
         ...body,
       },
     });
+
+    try {
+      await this.taskService.escalateNotify(task);
+    } catch (error) {}
 
     this.httpContext.response.json({ task });
   }

@@ -2,34 +2,6 @@ import { Schema, model } from 'mongoose';
 import { PagedModel, SearchableModel, DefaultDocument } from '../../plugin/types';
 import { defaultPlugin, initSearch } from '../../plugin/default';
 
-// db.units.updateOne({_id: ObjectId("65f71e457bd3168576951e4e")}, {$set: {"_id": ObjectId("611a3f0e2313d40efdedbf0d"),  "units": ["65f71dab216ede855d3f4323", "65f71b7c4028a945336a913d", "60ac8ca65ff3fb154fbab932", "60ac8ca55ff3fb154fbab8cf"], "parent": ObjectId("65f71b7c4028a945336a913d"), "state": "live"}})
-
-// db.units.updateOne({_id: ObjectId("611a3f0e2313d40efdedbf5d")}, {$set: {"units": [ObjectId("611a3f0e2313d40efdedbf5d"), ObjectId("60ac8cac5ff3fb154fbabe65"), ObjectId("60ac8ca65ff3fb154fbab932"), ObjectId("60ac8ca55ff3fb154fbab8cf")], "parent": ObjectId("60ac8cac5ff3fb154fbabe65"), "state": "live"}})
-
-// db.units.updateOne({_id: ObjectId("611a3f0e2313d40efdedbf62")}, {$set: {"units": [ObjectId("611a3f0e2313d40efdedbf62"), ObjectId("65f71b7c4028a945336a913d"), ObjectId("60ac8ca65ff3fb154fbab932"), ObjectId("60ac8ca55ff3fb154fbab8cf")], "parent": ObjectId("65f71b7c4028a945336a913d"), "state": "live"}})
-
-// "units": [
-//   "60ac8caa5ff3fb154fbabc53",
-//   "60ac8ca65ff3fb154fbab932",
-//   "60ac8ca55ff3fb154fbab8cf"
-// ],
-// "state": "live",
-// "suggestions": [
-//   "Bunyala",
-//   "Sub",
-//   "County"
-// ],
-// "_status": "active",
-// "_id": "60ac8caa5ff3fb154fbabc53",
-// "name": "Bunyala Sub County",
-// "type": "Subcounty",
-// "code": "KE_SubCounty_2973",
-// "parent": "60ac8ca65ff3fb154fbab932",
-// "createdAt": "2021-05-25T05:35:38.064Z",
-// "updatedAt": "2022-04-30T08:29:47.509Z",
-// "__v": 10,
-// "uid": "zI6vnsXresW"
-
 export type Unit = {
   name: string;
   uid?: string;
@@ -112,6 +84,11 @@ const unitSchema = new Schema(
 );
 
 unitSchema.plugin(defaultPlugin, { searchable: true });
+
+unitSchema.index({ parent: 1 });
+unitSchema.index({ state: 1 });
+unitSchema.index({ type: 1 });
+unitSchema.index({ units: 1 });
 
 async function addFields(): Promise<void> {
   const doc = this as UnitDocument;
