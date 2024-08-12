@@ -3,11 +3,27 @@ import { pickBy } from 'lodash';
 import { PageOptions, PageResult, Query, DefaultDocument } from '../../plugin/types';
 import { Task, TaskModel, TaskDocument } from '../../model/task/task';
 import { TaskEventEmitter } from '../../event/task/task';
+import { SmsService } from '../sms/sms';
+import moment from 'moment';
+import { UnitDocument } from '../../model/unit/unit';
+import { UserDocument } from '../../model/user/user';
+import { UnitService } from '../unit/unit';
+import { RoleService } from '../user/role';
+import { SIGNALS } from '../../config/signal';
 
 @injectable()
 export class TaskService {
   @inject(TaskEventEmitter)
   private taskEventEmitter: TaskEventEmitter;
+
+  @inject(SmsService)
+  private smsService: SmsService;
+
+  @inject(UnitService)
+  private unitService: UnitService;
+
+  @inject(RoleService)
+  private roleService: RoleService;
 
   async create(data: {
     unit: Task['unit'];
@@ -368,5 +384,82 @@ export class TaskService {
     ]);
 
     return docs;
+  }
+
+  async escalateNotify(task: TaskDocument): Promise<void> {
+    const type = task.getType();
+
+    let escalatedBy: UserDocument = null;
+
+    if (type === 'HEBS') {
+      const {
+        escalationForm: { user: _escalatedBy },
+      } = task.hebs;
+
+      escalatedBy = _escalatedBy as unknown as UserDocument;
+    } else if (type === 'VEBS') {
+      const {
+        responseForm: { user: _escalatedBy },
+      } = task.vebs;
+
+      escalatedBy = _escalatedBy as unknown as UserDocument;
+    } else {
+      const {
+        responseForm: { user: _escalatedBy },
+      } = task.cebs;
+
+      escalatedBy = _escalatedBy as unknown as UserDocument;
+    }
+
+    const unitId = task.populated('unit') || task.unit;
+
+    const unit = await this.unitService.findById(unitId);
+
+    await unit
+      .populate([
+        {
+          path: 'parent',
+          populate: [{ path: 'parent' }],
+        },
+      ])
+      .execPopulate();
+
+    const county = (unit.parent as unknown as UnitDocument).parent as unknown as UnitDocument;
+
+    let spots = ['EBS'];
+
+    if (SIGNALS.CEBS.includes(task.signal)) {
+      spots = ['EBS', 'CEBS'];
+    }
+    if (SIGNALS.HEBS.includes(task.signal)) {
+      spots = ['EBS', 'HEBS'];
+    }
+
+    if (SIGNALS.VEBS.includes(task.signal)) {
+      spots = ['EBS', 'VEBS'];
+    }
+
+    const roles = await this.roleService.page(
+      { unit: county._id, status: 'active', spot: { $in: spots } },
+      {
+        limit: 2,
+        populate: [{ path: 'user' }],
+      },
+    );
+
+    const date = moment.tz(task.createdAt, moment.tz.zonesForCountry('KE')[0]).format('llll');
+
+    const message = `Please respond to escalated Signal ID ${task.signalId}.\nSignal: ${task.signal.toUpperCase()}\nFrom: ${
+      unit.name
+    }\nEscalated by: ${escalatedBy.displayName} ${escalatedBy.phoneNumber}\nDated: ${date}`;
+
+    const countyUsers = roles.docs.map((role) => (role.user as unknown as UserDocument).phoneNumber);
+
+    if (countyUsers.length != 0) {
+      await this.smsService.send({
+        to: countyUsers,
+        message: message,
+      });
+    }
   }
 }

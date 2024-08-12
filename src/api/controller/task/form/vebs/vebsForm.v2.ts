@@ -12,6 +12,7 @@ import {
   summaryFormJoi,
   verificationFormJoi,
 } from '../../../../../util/form.joi';
+import { logger } from '../../../../../loader/logger';
 
 @controller('/v2/task/:signalId/vebs', Auth0Middleware)
 export class VebsFormControllerV2 extends BaseHttpController {
@@ -162,6 +163,12 @@ export class VebsFormControllerV2 extends BaseHttpController {
     if (!task.vebs || !task.vebs.investigationForm)
       throw new Error('Please submit risk assessment form before submitting summary form');
 
+    if (!task.vebs || !task.vebs.responseForm)
+      throw new Error('Please submit response form before submitting summary form');
+
+    if (task.vebs.responseForm?.recommendations.includes('Escalate to higher level') && !task.vebs.escalationForm)
+      throw new Error('Please submit escalation form before submitting summary form');
+
     task = await this.taskService.update(task._id, {
       'vebs.summaryForm': {
         ...{
@@ -242,6 +249,11 @@ export class VebsFormControllerV2 extends BaseHttpController {
     if (!task.vebs || !task.vebs.responseForm)
       throw new Error('Please submit response form before submitting escalation form');
 
+    if (task.vebs.responseForm && !task.vebs.responseForm.recommendations.includes('Escalate to higher level'))
+      throw new Error(
+        'Escalation form is only available for events that require escalating to higher level as one of the recommendations in the response form',
+      );
+
     task = await this.taskService.update(task._id, {
       'vebs.escalationForm': {
         ...{
@@ -251,6 +263,12 @@ export class VebsFormControllerV2 extends BaseHttpController {
         ...body,
       },
     });
+
+    try {
+      await this.taskService.escalateNotify(task);
+    } catch (error) {
+      logger.error(error);
+    }
 
     this.httpContext.response.json({ task });
   }
