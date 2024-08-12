@@ -12,6 +12,7 @@ import {
   summaryFormJoi,
   verificationFormJoi,
 } from '../../../../../util/form.joi';
+import { logger } from '../../../../../loader/logger';
 
 @controller('/v2/task/:signalId/vebs', Auth0Middleware)
 export class VebsFormControllerV2 extends BaseHttpController {
@@ -265,7 +266,9 @@ export class VebsFormControllerV2 extends BaseHttpController {
 
     try {
       await this.taskService.escalateNotify(task);
-    } catch (error) {}
+    } catch (error) {
+      logger.error(error);
+    }
 
     this.httpContext.response.json({ task });
   }

@@ -387,11 +387,30 @@ export class TaskService {
   }
 
   async escalateNotify(task: TaskDocument): Promise<void> {
-    const {
-      escalationForm: { user: _escalatedBy },
-    } = task.cebs;
+    const type = task.getType();
 
-    const escalatedBy = _escalatedBy as unknown as UserDocument;
+    let escalatedBy: UserDocument = null;
+
+    if (type === 'HEBS') {
+      const {
+        escalationForm: { user: _escalatedBy },
+      } = task.hebs;
+
+      escalatedBy = _escalatedBy as unknown as UserDocument;
+    } else if (type === 'VEBS') {
+      const {
+        responseForm: { user: _escalatedBy },
+      } = task.vebs;
+
+      escalatedBy = _escalatedBy as unknown as UserDocument;
+    } else {
+      const {
+        responseForm: { user: _escalatedBy },
+      } = task.cebs;
+
+      escalatedBy = _escalatedBy as unknown as UserDocument;
+    }
+
     const unitId = task.populated('unit') || task.unit;
 
     const unit = await this.unitService.findById(unitId);
