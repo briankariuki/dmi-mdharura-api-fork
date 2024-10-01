@@ -720,7 +720,7 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
 
       if (escalationForm && !summaryForm) return 'pending';
 
@@ -730,7 +730,7 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
     }
 
     return 'completed';
@@ -764,7 +764,7 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
 
       if (escalationForm && !summaryForm) return 'pending';
 
@@ -774,7 +774,7 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
     }
 
     return 'completed';
@@ -818,7 +818,7 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
     }
 
     return 'completed';
@@ -919,7 +919,7 @@ async function toInform(): Promise<{
             },
           })
             .populate([{ path: 'user' }])
-            .limit(2);
+            .limit(1);
 
         return {
           type: 'reminder',
@@ -937,7 +937,7 @@ async function toInform(): Promise<{
           },
         })
           .populate([{ path: 'user' }])
-          .limit(2);
+          .limit(1);
 
         if (!roles.length)
           roles = await RoleModel.find({
@@ -948,7 +948,7 @@ async function toInform(): Promise<{
             },
           })
             .populate([{ path: 'user' }])
-            .limit(2);
+            .limit(1);
 
         return {
           type: 'follow-up',
@@ -967,7 +967,7 @@ async function toInform(): Promise<{
         },
       })
         .populate([{ path: 'user' }])
-        .limit(2);
+        .limit(1);
 
       if (!roles.length)
         roles = await RoleModel.find({
@@ -978,7 +978,7 @@ async function toInform(): Promise<{
           },
         })
           .populate([{ path: 'user' }])
-          .limit(2);
+          .limit(1);
 
       return {
         type: 'reminder',
@@ -996,7 +996,7 @@ async function toInform(): Promise<{
         },
       })
         .populate([{ path: 'user' }])
-        .limit(2);
+        .limit(1);
 
       if (!roles.length)
         roles = await RoleModel.find({
@@ -1007,7 +1007,7 @@ async function toInform(): Promise<{
           },
         })
           .populate([{ path: 'user' }])
-          .limit(2);
+          .limit(1);
 
       return {
         type: 'reminder',
@@ -1056,7 +1056,7 @@ async function toInform(): Promise<{
         },
       })
         .populate([{ path: 'user' }])
-        .limit(2);
+        .limit(1);
 
       if (!roles.length)
         roles = await RoleModel.find({
@@ -1067,7 +1067,7 @@ async function toInform(): Promise<{
           },
         })
           .populate([{ path: 'user' }])
-          .limit(2);
+          .limit(1);
 
       return {
         type: 'reminder',
@@ -1313,7 +1313,7 @@ async function toInform(): Promise<{
           },
         })
           .populate([{ path: 'user' }])
-          .limit(2);
+          .limit(1);
 
         if (!roles.length)
           roles = await RoleModel.find({
@@ -1324,7 +1324,7 @@ async function toInform(): Promise<{
             },
           })
             .populate([{ path: 'user' }])
-            .limit(2);
+            .limit(1);
 
         return {
           type: 'follow-up',
@@ -1343,7 +1343,7 @@ async function toInform(): Promise<{
         },
       })
         .populate([{ path: 'user' }])
-        .limit(2);
+        .limit(1);
 
       if (!roles.length)
         roles = await RoleModel.find({
@@ -1354,7 +1354,7 @@ async function toInform(): Promise<{
           },
         })
           .populate([{ path: 'user' }])
-          .limit(2);
+          .limit(1);
 
       return {
         type: 'reminder',
@@ -1372,7 +1372,7 @@ async function toInform(): Promise<{
         },
       })
         .populate([{ path: 'user' }])
-        .limit(2);
+        .limit(1);
 
       if (!roles.length)
         roles = await RoleModel.find({
@@ -1383,7 +1383,7 @@ async function toInform(): Promise<{
           },
         })
           .populate([{ path: 'user' }])
-          .limit(2);
+          .limit(1);
 
       return {
         type: 'reminder',
@@ -1432,7 +1432,7 @@ async function toInform(): Promise<{
         },
       })
         .populate([{ path: 'user' }])
-        .limit(2);
+        .limit(1);
 
       if (!roles.length)
         roles = await RoleModel.find({
@@ -1443,7 +1443,7 @@ async function toInform(): Promise<{
           },
         })
           .populate([{ path: 'user' }])
-          .limit(2);
+          .limit(1);
 
       return {
         type: 'reminder',
