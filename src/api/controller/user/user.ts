@@ -17,6 +17,7 @@ import {
 import { UserDocument } from '../../../model/user/user';
 import { Auth0Middleware } from '../../middleware/auth';
 import { WhatsappService } from '../../../service/whatsapp/whatsapp';
+import { TEST_USER_PHONE_NUMBER } from '../../../config/system';
 
 @controller('/v1/user')
 export class UserController extends BaseHttpController {
@@ -56,7 +57,7 @@ export class UserController extends BaseHttpController {
     }
 
     const smsCode =
-      phoneNumber === PROJECT_OTP_TEST_PHONE_NUMBER
+      phoneNumber === PROJECT_OTP_TEST_PHONE_NUMBER || phoneNumber === TEST_USER_PHONE_NUMBER
         ? PROJECT_OTP_TEST_CODE
         : generate({ length: PROJECT_OTP_LENGTH, charset: PROJECT_OTP_CHARACTER_SET });
 
