@@ -13,6 +13,11 @@ import { AuthProvider } from './api/provider/auth';
 import { AddressInfo } from 'net';
 import { SystemService } from './service/system/system';
 import stc from 'string-to-color';
+import { EbsConnectService } from './service/ebsconnect/ebsconnect';
+import { createClient } from '@supabase/supabase-js';
+import { EBS_CONNECT_SUPABASE_URL, EBS_CONNECT_SUPABASE_KEY } from './config/ebsconnect';
+
+export const supabaseClient = createClient(EBS_CONNECT_SUPABASE_URL, EBS_CONNECT_SUPABASE_KEY);
 
 String.prototype.toHex = function () {
   return stc(this);
@@ -64,6 +69,10 @@ async function serve(): Promise<void> {
     await container.get(SystemService).init();
 
     logger.info('SYSTEM_INIT_COMPLETED');
+
+    await container.get(EbsConnectService).init();
+
+    logger.info('EBS_CONNECT_INIT_COMPLETED');
   });
 }
 

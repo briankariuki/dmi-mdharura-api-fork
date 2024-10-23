@@ -10,11 +10,15 @@ import { UserDocument } from '../../model/user/user';
 import { UnitService } from '../unit/unit';
 import { RoleService } from '../user/role';
 import { SIGNALS } from '../../config/signal';
+import { EbsConnectService } from '../ebsconnect/ebsconnect';
 
 @injectable()
 export class TaskService {
   @inject(TaskEventEmitter)
   private taskEventEmitter: TaskEventEmitter;
+
+  @inject(EbsConnectService)
+  private ebsConnectService: EbsConnectService;
 
   @inject(SmsService)
   private smsService: SmsService;
@@ -70,6 +74,8 @@ export class TaskService {
         { path: 'lebs.labForm.user' },
       ])
       .execPopulate();
+
+    await this.ebsConnectService.sync(task);
 
     return task;
   }
@@ -146,6 +152,8 @@ export class TaskService {
         { path: 'lebs.labForm.user' },
       ])
       .execPopulate();
+
+    await this.ebsConnectService.sync(task);
 
     return task;
   }
