@@ -10,6 +10,7 @@ import { EBS_CONNECT_SUPABASE_TABLE } from '../../config/ebsconnect';
 import { supabaseClient } from '../../app';
 import { TaskEventEmitter } from '../task/task';
 import { TaskModel } from '../../model/task/task';
+import { TEST_USER_UNIT_CODE } from '../../config/system';
 
 type EbsConnectEvent = 'ebsconnect-created' | 'ebsconnect-updated' | 'ebsconnect-sync';
 
@@ -42,8 +43,11 @@ export class EbsConnectEventEmitter extends EventEmitter {
           $or: [
             {
               // uid: { $eq: doc.UNIT_CODE },
-              uid: { $eq: '65e75c74a295fa9864e59498' },
+
               code: { $eq: doc.UNIT_CODE },
+            },
+            {
+              code: { $eq: TEST_USER_UNIT_CODE },
             },
           ],
           type,
