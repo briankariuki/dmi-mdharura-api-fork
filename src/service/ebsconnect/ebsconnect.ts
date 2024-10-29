@@ -18,6 +18,9 @@ export class EbsConnectService {
   ebsConnectEmitter: EbsConnectEventEmitter;
 
   async init(): Promise<void> {
+    //In a pm2 cluster only start one ebs connect service
+    if (process.env.NODE_APP_INSTANCE != '0') return;
+
     const channel = supabaseClient
       .channel(EBS_CONNECT_SUPABASE_CHANNEL)
       .on(
