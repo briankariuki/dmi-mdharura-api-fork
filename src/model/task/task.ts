@@ -166,7 +166,7 @@ export type Task = {
   };
   status: 'pending' | 'completed';
   state: 'test' | 'live';
-  via: 'internet' | 'sms' | 'echis' | 'kabs' | 'krcs' | 'e-CHIS' | 'KABS';
+  via: 'internet' | 'sms' | 'echis' | 'kabs' | 'krcs' | 'e-CHIS' | 'KABS' | 'eCHIS';
   spot?: Role['spot'];
   version: string;
 };
@@ -237,7 +237,7 @@ const taskSchema = new Schema(
       es_indexed: true,
       es_type: 'completion',
     },
-    via: { type: String, default: 'internet', enum: ['internet', 'sms', 'e-CHIS', 'echis', 'KABS'] },
+    via: { type: String, default: 'internet', enum: ['internet', 'sms', 'e-CHIS', 'kabs', 'eCHIS', 'echis', 'KABS'] },
     pmebs: new Schema(
       {
         reportForm: new Schema(

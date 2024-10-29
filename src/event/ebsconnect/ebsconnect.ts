@@ -70,18 +70,18 @@ export class EbsConnectEventEmitter extends EventEmitter {
         }
 
         // Find verifying User
-        let verifyingUSer = await UserModel.findOne({
-          phoneNumber: { $eq: doc.CHA_PHONE },
-        });
+        // let verifyingUSer = await UserModel.findOne({
+        //   phoneNumber: { $eq: doc.CHA_PHONE },
+        // });
 
-        if (!verifyingUSer) {
-          verifyingUSer = await this.userService.create({
-            displayName: doc.CHA_NAME,
-            phoneNumber: doc.CHA_PHONE,
-            spot: 'CHA',
-            unit: unit.id,
-          });
-        }
+        // if (!verifyingUSer) {
+        //   verifyingUSer = await this.userService.create({
+        //     displayName: doc.CHA_NAME || "",
+        //     phoneNumber: doc.CHA_PHONE,
+        //     spot: 'CHA',
+        //     unit: unit.id,
+        //   });
+        // }
 
         const ebsTask = await new TaskModel({
           unit: unit._id,

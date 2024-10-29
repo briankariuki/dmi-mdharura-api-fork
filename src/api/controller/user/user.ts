@@ -57,14 +57,20 @@ export class UserController extends BaseHttpController {
     }
 
     const smsCode =
-      phoneNumber === PROJECT_OTP_TEST_PHONE_NUMBER || phoneNumber === TEST_USER_PHONE_NUMBER
+      phoneNumber === PROJECT_OTP_TEST_PHONE_NUMBER ||
+      phoneNumber === TEST_USER_PHONE_NUMBER ||
+      TEST_USER_PHONE_NUMBER === `+254${phoneNumber.substring(1)}`
         ? PROJECT_OTP_TEST_CODE
         : generate({ length: PROJECT_OTP_LENGTH, charset: PROJECT_OTP_CHARACTER_SET });
 
     const token = sign({ phoneNumber }, smsCode, { expiresIn: PROJECT_OTP_EXPIRY });
 
     try {
-      await this.smsService.send({ to: phoneNumber, message: `${smsCode} is your ${PROJECT_NAME} verification code` });
+      if (smsCode != PROJECT_OTP_TEST_CODE)
+        await this.smsService.send({
+          to: phoneNumber,
+          message: `${smsCode} is your ${PROJECT_NAME} verification code`,
+        });
     } catch (error) {
       throw new Error('Problem sending sms with the verification. Try again');
     }
