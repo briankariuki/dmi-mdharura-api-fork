@@ -6,7 +6,7 @@ import { SIGNALS } from '../../config/signal';
 import moment from 'moment';
 import { RoleModel, Role } from '../user/role';
 import { UserDocument } from '../user/user';
-import { UnitModel } from '../unit/unit';
+import { UnitDocument, UnitModel } from '../unit/unit';
 import { TASK_REMINDER_ESCALATE_AFTER, TASK_REMINDER_UNITS } from '../../config/task';
 import {
   VerificationForm,
@@ -24,6 +24,7 @@ import {
   summaryFormSchema,
   labFormSchema,
 } from '../../util/form.schema';
+import { EbsConnectDocument } from '../../types/ebsconnect';
 
 export type Task = {
   user: string;
@@ -165,7 +166,7 @@ export type Task = {
   };
   status: 'pending' | 'completed';
   state: 'test' | 'live';
-  via: 'internet' | 'sms';
+  via: 'internet' | 'sms' | 'echis' | 'kabs' | 'krcs' | 'e-CHIS' | 'KABS' | 'eCHIS';
   spot?: Role['spot'];
   version: string;
 };
@@ -204,6 +205,7 @@ export type TaskDocument = DefaultDocument &
       users: UserDocument[];
     }>;
     getType(): 'CEBS' | 'HEBS' | 'VEBS' | 'LEBS';
+    toEbsConnect(): Promise<EbsConnectDocument>;
   };
 
 const signalId = () => generate({ length: 6, charset: '12346789ABCDEFGHJKMNPQRTWXZ' });
@@ -235,7 +237,7 @@ const taskSchema = new Schema(
       es_indexed: true,
       es_type: 'completion',
     },
-    via: { type: String, default: 'internet', enum: ['internet', 'sms'] },
+    via: { type: String, default: 'internet', enum: ['internet', 'sms', 'e-CHIS', 'kabs', 'eCHIS', 'echis', 'KABS'] },
     pmebs: new Schema(
       {
         reportForm: new Schema(
@@ -549,6 +551,46 @@ const taskSchema = new Schema(
 
 taskSchema.plugin(defaultPlugin, { searchable: true });
 
+taskSchema.index({ unit: 1 });
+taskSchema.index({ user: 1 });
+taskSchema.index({ signal: 1 });
+taskSchema.index({ signalId: 1 });
+taskSchema.index({ createdAt: 1 });
+taskSchema.index({ updatedAt: 1 });
+taskSchema.index({ status: 1 });
+taskSchema.index({ state: 1 });
+taskSchema.index({ version: 1 });
+taskSchema.index({ via: 1 });
+taskSchema.index({ units: 1 });
+taskSchema.index({ spot: 1 });
+taskSchema.index({ 'cebs.verificationForm.user': 1 });
+taskSchema.index({ 'cebs.verificationForm.spot': 1 });
+taskSchema.index({ 'cebs.investigationForm.user': 1 });
+taskSchema.index({ 'cebs.investigationForm.spot': 1 });
+taskSchema.index({ 'cebs.responseForm.user': 1 });
+taskSchema.index({ 'cebs.responseForm.spot': 1 });
+taskSchema.index({ 'cebs.summaryForm.user': 1 });
+taskSchema.index({ 'cebs.summaryForm.spot': 1 });
+taskSchema.index({ 'cebs.escalationForm.user': 1 });
+taskSchema.index({ 'cebs.escalationForm.spot': 1 });
+taskSchema.index({ 'cebs.verificationForm.isThreatStillExisting': 1 });
+taskSchema.index({ 'cebs.verificationForm.isReportedBefore': 1 });
+taskSchema.index({ 'cebs.responseForm.recommendations': 1 });
+
+taskSchema.index({ 'hebs.verificationForm.user': 1 });
+taskSchema.index({ 'hebs.verificationForm.spot': 1 });
+taskSchema.index({ 'hebs.investigationForm.user': 1 });
+taskSchema.index({ 'hebs.investigationForm.spot': 1 });
+taskSchema.index({ 'hebs.responseForm.user': 1 });
+taskSchema.index({ 'hebs.responseForm.spot': 1 });
+taskSchema.index({ 'hebs.summaryForm.user': 1 });
+taskSchema.index({ 'hebs.summaryForm.spot': 1 });
+taskSchema.index({ 'hebs.escalationForm.user': 1 });
+taskSchema.index({ 'hebs.escalationForm.spot': 1 });
+taskSchema.index({ 'hebs.verificationForm.isThreatStillExisting': 1 });
+taskSchema.index({ 'hebs.verificationForm.isReportedBefore': 1 });
+taskSchema.index({ 'hebs.responseForm.recommendations': 1 });
+
 async function addFields(): Promise<void> {
   const doc = this as TaskDocument;
 
@@ -590,10 +632,10 @@ async function addFields(): Promise<void> {
               $in: SIGNALS.CEBS.includes(signal)
                 ? ['CHA', 'AHA', 'CHV', 'CDR']
                 : SIGNALS.HEBS.includes(signal)
-                ? ['HCW', 'SFP']
-                : SIGNALS.VEBS.includes(signal)
-                ? ['VET']
-                : ['LEBS'],
+                  ? ['HCW', 'SFP']
+                  : SIGNALS.VEBS.includes(signal)
+                    ? ['VET']
+                    : ['LEBS'],
             },
             unit: unitId,
           },
@@ -655,7 +697,7 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
     const { verificationForm, escalationForm, responseForm, investigationForm, labForm, summaryForm } = cebs;
 
-    if (escalationForm) return 'completed';
+    if (escalationForm && version != '2') return 'completed';
 
     if (!verificationForm) return 'pending';
 
@@ -678,17 +720,19 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
       if (!responseForm) return 'pending';
 
-      if (!summaryForm) return 'pending';
-
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
+
+      if (escalationForm && !summaryForm) return 'pending';
+
+      if (!summaryForm) return 'pending';
     } else {
       if (!responseForm) return 'pending';
 
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
     }
 
     return 'completed';
@@ -697,7 +741,7 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
     const { verificationForm, escalationForm, responseForm, investigationForm, labForm, summaryForm } = vebs;
 
-    if (escalationForm) return 'completed';
+    if (escalationForm && version != '2') return 'completed';
 
     if (!verificationForm) return 'pending';
 
@@ -720,17 +764,19 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
       if (!responseForm) return 'pending';
 
-      if (!summaryForm) return 'pending';
-
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
+
+      if (escalationForm && !summaryForm) return 'pending';
+
+      if (!summaryForm) return 'pending';
     } else {
       if (!responseForm) return 'pending';
 
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
     }
 
     return 'completed';
@@ -739,7 +785,7 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
     const { verificationForm, escalationForm, responseForm, investigationForm, labForm, summaryForm } = hebs;
 
-    if (escalationForm) return 'completed';
+    if (escalationForm && version != '2') return 'completed';
 
     if (!verificationForm) return 'pending';
 
@@ -762,17 +808,19 @@ async function getStatus(): Promise<'pending' | 'completed'> {
 
       if (!responseForm) return 'pending';
 
-      if (!summaryForm) return 'pending';
-
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
+
+      if (escalationForm && !summaryForm) return 'pending';
+
+      if (!summaryForm) return 'pending';
     } else {
       if (!responseForm) return 'pending';
 
       if (!responseForm.recommendations) return 'completed';
 
-      if (responseForm.recommendations.includes('Escalate to higher level')) return 'pending';
+      if (responseForm.recommendations.includes('Escalate to higher level') && !escalationForm) return 'pending';
     }
 
     return 'completed';
@@ -878,7 +926,7 @@ async function toInform(): Promise<{
         return {
           type: 'reminder',
           stage: 'cebs-verification',
-          users: roles.map((role) => (role.user as unknown) as UserDocument),
+          users: roles.map((role) => role.user as unknown as UserDocument),
         };
       } else {
         const { parent } = await UnitModel.findById(unitId);
@@ -907,7 +955,7 @@ async function toInform(): Promise<{
         return {
           type: 'follow-up',
           stage: 'cebs-verification',
-          users: roles.map((role) => (role.user as unknown) as UserDocument),
+          users: roles.map((role) => role.user as unknown as UserDocument),
         };
       }
     } else if (!cebs.investigationForm) {
@@ -937,7 +985,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'cebs-investigation',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (!cebs.responseForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -966,7 +1014,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'cebs-response',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     }
     // } else if (cebs.investigationForm.isLabSamplesCollected == 'Yes' && version == '2' && !cebs.labForm) {
@@ -1026,7 +1074,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'cebs-summary',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (cebs.responseForm.responseActivities.includes('Escalate to higher level') && !cebs.escalationForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -1055,7 +1103,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'cebs-escalation',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     }
   } else if (SIGNALS.VEBS.includes(signal)) {
@@ -1088,7 +1136,7 @@ async function toInform(): Promise<{
           ? 'reminder'
           : 'follow-up',
         stage: 'vebs-verification',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (!vebs.investigationForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -1117,7 +1165,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'vebs-investigation',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (!vebs.responseForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -1146,7 +1194,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'vebs-response',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     }
     // else if (vebs.investigationForm.isLabSamplesCollected == 'Yes' && version == '2' && !vebs.labForm) {
@@ -1206,7 +1254,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'vebs-summary',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (vebs.responseForm.responseActivities.includes('Escalate to higher level') && !vebs.escalationForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -1235,7 +1283,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'vebs-escalation',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     }
   } else if (SIGNALS.HEBS.includes(signal)) {
@@ -1254,7 +1302,7 @@ async function toInform(): Promise<{
         return {
           type: 'reminder',
           stage: 'hebs-verification',
-          users: roles.map((role) => (role.user as unknown) as UserDocument),
+          users: roles.map((role) => role.user as unknown as UserDocument),
         };
       } else if (hebs) {
         const { parent } = await UnitModel.findById(unitId);
@@ -1283,7 +1331,7 @@ async function toInform(): Promise<{
         return {
           type: 'follow-up',
           stage: 'hebs-verification',
-          users: roles.map((role) => (role.user as unknown) as UserDocument),
+          users: roles.map((role) => role.user as unknown as UserDocument),
         };
       }
     } else if (!hebs.investigationForm) {
@@ -1313,7 +1361,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'hebs-investigation',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (!hebs.responseForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -1342,7 +1390,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'hebs-response',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     }
     // else if (hebs.investigationForm.isLabSamplesCollected == 'Yes' && version == '2' && !hebs.labForm) {
@@ -1402,7 +1450,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'hebs-summary',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (hebs.responseForm.responseActivities.includes('Escalate to higher level') && !hebs.escalationForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -1431,7 +1479,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'hebs-escalation',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     }
   } else if (SIGNALS.LEBS.includes(signal)) {
@@ -1464,7 +1512,7 @@ async function toInform(): Promise<{
           ? 'reminder'
           : 'follow-up',
         stage: 'lebs-verification',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (!lebs.investigationForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -1493,7 +1541,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'lebs-investigation',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (!lebs.responseForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -1522,7 +1570,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'lebs-response',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     } else if (version == '2' && !lebs.summaryForm) {
       const { parent } = await UnitModel.findById(unitId);
@@ -1551,7 +1599,7 @@ async function toInform(): Promise<{
       return {
         type: 'reminder',
         stage: 'lebs-summary',
-        users: roles.map((role) => (role.user as unknown) as UserDocument),
+        users: roles.map((role) => role.user as unknown as UserDocument),
       };
     }
   }
@@ -1575,7 +1623,82 @@ function getType(): 'CEBS' | 'HEBS' | 'VEBS' | 'LEBS' {
   throw new Error('Unknown signal code');
 }
 
-taskSchema.methods = { ...taskSchema.methods, ...{ addFields, toInform, getStatus, getType } };
+async function toEbsConnect(): Promise<EbsConnectDocument> {
+  const { _id, unit, signal, user, createdAt, cebs } = this as TaskDocument;
+
+  //Find reporting unit CHA
+  let roles = await RoleModel.find({
+    unit: (unit as unknown as UnitDocument)._id,
+    status: 'active',
+    spot: {
+      $in: ['CHA'],
+    },
+  })
+    .populate([{ path: 'user' }])
+    .limit(1);
+
+  if (!roles.length)
+    roles = await RoleModel.find({
+      unit: (unit as unknown as UnitDocument).id,
+      status: 'active',
+      spot: {
+        $in: ['AHA', 'CHA'],
+      },
+    })
+      .populate([{ path: 'user' }])
+      .limit(1);
+
+  let doc: EbsConnectDocument = {
+    UNIT_NAME: (unit as unknown as UnitDocument).name,
+    UNIT_CODE: (unit as unknown as UnitDocument).code,
+    UNIT_UID: (unit as unknown as UnitDocument).uid || '',
+    SIGNAL_ID: _id,
+    SOURCE: 'mdharura',
+    SIGNAL: Number.parseInt(signal),
+    REPORTED_BY: (user as unknown as UserDocument).displayName,
+    REPORTED_BY_PHONE: (user as unknown as UserDocument).phoneNumber,
+    DATE_REPORTED: createdAt.toISOString(),
+    CHA_NAME: '',
+    CHA_PHONE: '',
+  };
+
+  if (roles.length > 0) {
+    let cha = roles.at(0).user as unknown as UserDocument;
+
+    doc = {
+      ...doc,
+      ...{
+        CHA_NAME: cha.displayName,
+        CHA_PHONE: cha.phoneNumber,
+      },
+    };
+  }
+
+  if (cebs) {
+    const { verificationForm } = cebs;
+
+    let verifyingUSer = verificationForm.user as unknown as UserDocument;
+
+    if (verificationForm) {
+      doc = {
+        ...doc,
+        ...{
+          CHA_NAME: verifyingUSer.displayName,
+          CHA_PHONE: verifyingUSer.phoneNumber,
+          DATE_VERIFIED: (verificationForm as any).createdAt.toISOString(),
+          VERIFIED: true,
+          VERIFIED_TRUE: verificationForm.isThreatStillExisting === 'Yes',
+          VERIFIED_BY_NAME: verifyingUSer.displayName,
+          VERIFIED_BY_PHONE: verifyingUSer.phoneNumber,
+        },
+      };
+    }
+  }
+
+  return doc;
+}
+
+taskSchema.methods = { ...taskSchema.methods, ...{ addFields, toInform, getStatus, getType, toEbsConnect } };
 
 export const TaskModel = model<TaskDocument, PagedModel<TaskDocument> & SearchableModel<TaskDocument>>(
   'Task',

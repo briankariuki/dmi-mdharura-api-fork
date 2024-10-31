@@ -1,6 +1,15 @@
 import { inject, injectable } from 'inversify';
 import { logger } from '../../loader/logger';
-import { SYSTEM_ADMIN_DISPLAY_NAME, SYSTEM_ADMIN_PHONE_NUMBER, SYSTEM_ADMIN_SPOT } from '../../config/system';
+import {
+  SYSTEM_ADMIN_DISPLAY_NAME,
+  SYSTEM_ADMIN_PHONE_NUMBER,
+  SYSTEM_ADMIN_SPOT,
+  TEST_USER_DISPLAY_NAME,
+  TEST_USER_PHONE_NUMBER,
+  TEST_USER_SPOT,
+  TEST_USER_SYNC,
+  TEST_USER_UNIT_CODE,
+} from '../../config/system';
 import { TaskAgendaEmitter } from '../../agenda/task/task';
 import { UserService } from '../user/user';
 import { UnitService } from '../unit/unit';
@@ -10,12 +19,14 @@ import khisCommunityUnits from './communityUnit.json';
 import { UnitModel } from '../../model/unit/unit';
 import { KHIS_Wards, KHIS_HealthFacilities, KHIS_CommunityUnits } from '../../types/khis';
 import { UNIT_SYNC } from '../../config/unit';
+import { UserDocument, UserModel } from '../../model/user/user';
+import { RoleDocument, RoleModel } from '../../model/user/role';
 
-const { KHIS_Wards } = (khisWards as unknown) as { KHIS_Wards: KHIS_Wards };
+const { KHIS_Wards } = khisWards as unknown as { KHIS_Wards: KHIS_Wards };
 
-const { KHIS_HealthFacilities } = (khisHealthFacilities as unknown) as { KHIS_HealthFacilities: KHIS_HealthFacilities };
+const { KHIS_HealthFacilities } = khisHealthFacilities as unknown as { KHIS_HealthFacilities: KHIS_HealthFacilities };
 
-const { KHIS_CommunityUnits } = (khisCommunityUnits as unknown) as {
+const { KHIS_CommunityUnits } = khisCommunityUnits as unknown as {
   KHIS_CommunityUnits: KHIS_CommunityUnits;
 };
 
@@ -219,6 +230,71 @@ export class SystemService {
         } catch (error) {
           logger.error('SYSTEM_UNIT_SYNC_ERROR %o', error);
         }
+
+      if (TEST_USER_SYNC === 'enabled') {
+        const { _id: unitId, parent: parent } = await this.unitService.findOne({ code: TEST_USER_UNIT_CODE });
+
+        let testUser: UserDocument;
+        let countyrole: RoleDocument;
+        let subcountyrole: RoleDocument;
+        let charole: RoleDocument;
+
+        testUser = await UserModel.findOne({
+          phoneNumber: TEST_USER_PHONE_NUMBER,
+        });
+
+        if (!testUser)
+          testUser = await new UserModel({
+            phoneNumber: TEST_USER_PHONE_NUMBER,
+            displayName: TEST_USER_DISPLAY_NAME,
+          }).save();
+
+        // CHA Role
+        charole = await RoleModel.findOne({
+          user: testUser._id,
+          spot: 'CHA',
+          unit: unitId,
+        });
+
+        if (!charole)
+          charole = await new RoleModel({
+            user: testUser._id,
+            spot: 'CHA',
+            unit: unitId,
+          }).save();
+
+        const { _id: subCountyId, parent: county } = await this.unitService.findOne({ _id: parent });
+
+        // CEBS Subcounty Role
+        subcountyrole = await RoleModel.findOne({
+          user: testUser._id,
+          spot: 'CEBS',
+          unit: subCountyId,
+        });
+
+        if (!subcountyrole)
+          subcountyrole = await new RoleModel({
+            user: testUser._id,
+            spot: 'CEBS',
+            unit: subCountyId,
+          }).save();
+
+        const { _id: countyId } = await this.unitService.findOne({ _id: county });
+
+        // CEBS County Role
+        countyrole = await RoleModel.findOne({
+          user: testUser._id,
+          spot: 'CEBS',
+          unit: countyId,
+        });
+
+        if (!countyrole)
+          countyrole = await new RoleModel({
+            user: testUser._id,
+            spot: 'CEBS',
+            unit: countyId,
+          }).save();
+      }
 
       await this.taskAgendaEmitter.start();
 

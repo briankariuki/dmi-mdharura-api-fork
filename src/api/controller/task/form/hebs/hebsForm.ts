@@ -10,6 +10,7 @@ import {
   responseFormJoi,
   verificationFormJoi,
 } from '../../../../../util/form.joi';
+import { logger } from '../../../../../loader/logger';
 
 @controller('/v1/task/:signalId/hebs', Auth0Middleware)
 export class HebsFormController extends BaseHttpController {
@@ -160,6 +161,11 @@ export class HebsFormController extends BaseHttpController {
     if (!task.hebs || !task.hebs.responseForm)
       throw new Error('Please submit response form before submitting escalation form');
 
+    if (task.hebs.responseForm && !task.hebs.responseForm.recommendations.includes('Escalate to higher level'))
+      throw new Error(
+        'Escalation form is only available for events that require escalating to higher level as one of the recommendations in the response form',
+      );
+
     task = await this.taskService.update(task._id, {
       'hebs.escalationForm': {
         ...{
@@ -169,6 +175,12 @@ export class HebsFormController extends BaseHttpController {
         ...body,
       },
     });
+
+    try {
+      await this.taskService.escalateNotify(task);
+    } catch (error) {
+      logger.error(error);
+    }
 
     this.httpContext.response.json({ task });
   }
