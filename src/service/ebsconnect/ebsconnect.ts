@@ -67,7 +67,7 @@ export class EbsConnectService {
 
     let doc = await task.toEbsConnect();
 
-    if (doc.UNIT_CODE !== TEST_USER_UNIT_CODE) return;
+    // if (doc.UNIT_CODE !== TEST_USER_UNIT_CODE) return;
 
     this.ebsConnectEmitter.emit('ebsconnect-sync', doc);
   }
