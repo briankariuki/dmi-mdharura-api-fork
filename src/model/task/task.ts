@@ -6,7 +6,7 @@ import { SIGNALS } from '../../config/signal';
 import moment from 'moment';
 import { RoleModel, Role } from '../user/role';
 import { UserDocument } from '../user/user';
-import { UnitModel } from '../unit/unit';
+import { UnitDocument, UnitModel } from '../unit/unit';
 import { TASK_REMINDER_ESCALATE_AFTER, TASK_REMINDER_UNITS } from '../../config/task';
 import {
   VerificationForm,
@@ -23,7 +23,9 @@ import {
   escalationFormSchema,
   summaryFormSchema,
   labFormSchema,
+  notifyFormSchema,
 } from '../../util/form.schema';
+import { EbsConnectDocument } from '../../types/ebsconnect';
 
 export type Task = {
   user: string;
@@ -45,6 +47,16 @@ export type Task = {
       spot?: Role['spot'];
     };
     requestForm?: {
+      user: string;
+      description: string;
+      unit: string;
+      locality: string;
+      dateReported: Date;
+      dateRequested: Date;
+      via: 'internet' | 'sms';
+      spot?: Role['spot'];
+    };
+    notifyForm?: {
       user: string;
       description: string;
       unit: string;
@@ -93,7 +105,6 @@ export type Task = {
       isStillHappening: string;
       isReportedBefore: string;
       dateSCDSCInformed: Date;
-
       via: 'internet' | 'sms';
       spot?: Role['spot'];
     };
@@ -165,7 +176,7 @@ export type Task = {
   };
   status: 'pending' | 'completed';
   state: 'test' | 'live';
-  via: 'internet' | 'sms';
+  via: 'internet' | 'sms' | 'echis' | 'kabs' | 'krcs' | 'e-CHIS' | 'KABS' | 'eCHIS';
   spot?: Role['spot'];
   version: string;
 };
@@ -204,6 +215,7 @@ export type TaskDocument = DefaultDocument &
       users: UserDocument[];
     }>;
     getType(): 'CEBS' | 'HEBS' | 'VEBS' | 'LEBS';
+    toEbsConnect(): Promise<EbsConnectDocument>;
   };
 
 const signalId = () => generate({ length: 6, charset: '12346789ABCDEFGHJKMNPQRTWXZ' });
@@ -235,7 +247,7 @@ const taskSchema = new Schema(
       es_indexed: true,
       es_type: 'completion',
     },
-    via: { type: String, default: 'internet', enum: ['internet', 'sms'] },
+    via: { type: String, default: 'internet', enum: ['internet', 'sms', 'e-CHIS', 'kabs', 'eCHIS', 'echis', 'KABS'] },
     pmebs: new Schema(
       {
         reportForm: new Schema(
@@ -303,6 +315,7 @@ const taskSchema = new Schema(
           },
           { timestamps: true },
         ),
+        notifyForm: notifyFormSchema,
       },
       { timestamps: true },
     ),
@@ -1621,7 +1634,82 @@ function getType(): 'CEBS' | 'HEBS' | 'VEBS' | 'LEBS' {
   throw new Error('Unknown signal code');
 }
 
-taskSchema.methods = { ...taskSchema.methods, ...{ addFields, toInform, getStatus, getType } };
+async function toEbsConnect(): Promise<EbsConnectDocument> {
+  const { _id, unit, signal, user, createdAt, cebs } = this as TaskDocument;
+
+  //Find reporting unit CHA
+  let roles = await RoleModel.find({
+    unit: (unit as unknown as UnitDocument)._id,
+    status: 'active',
+    spot: {
+      $in: ['CHA'],
+    },
+  })
+    .populate([{ path: 'user' }])
+    .limit(1);
+
+  if (!roles.length)
+    roles = await RoleModel.find({
+      unit: (unit as unknown as UnitDocument).id,
+      status: 'active',
+      spot: {
+        $in: ['AHA', 'CHA'],
+      },
+    })
+      .populate([{ path: 'user' }])
+      .limit(1);
+
+  let doc: EbsConnectDocument = {
+    UNIT_NAME: (unit as unknown as UnitDocument).name,
+    UNIT_CODE: (unit as unknown as UnitDocument).code,
+    UNIT_UID: (unit as unknown as UnitDocument).uid || '',
+    SIGNAL_ID: _id,
+    SOURCE: 'mdharura',
+    SIGNAL: Number.parseInt(signal),
+    REPORTED_BY: (user as unknown as UserDocument).displayName,
+    REPORTED_BY_PHONE: (user as unknown as UserDocument).phoneNumber,
+    DATE_REPORTED: createdAt.toISOString(),
+    CHA_NAME: '',
+    CHA_PHONE: '',
+  };
+
+  if (roles.length > 0) {
+    let cha = roles.at(0).user as unknown as UserDocument;
+
+    doc = {
+      ...doc,
+      ...{
+        CHA_NAME: cha.displayName,
+        CHA_PHONE: cha.phoneNumber,
+      },
+    };
+  }
+
+  if (cebs) {
+    const { verificationForm } = cebs;
+
+    let verifyingUSer = verificationForm.user as unknown as UserDocument;
+
+    if (verificationForm) {
+      doc = {
+        ...doc,
+        ...{
+          CHA_NAME: verifyingUSer.displayName,
+          CHA_PHONE: verifyingUSer.phoneNumber,
+          DATE_VERIFIED: (verificationForm as any).createdAt.toISOString(),
+          VERIFIED: true,
+          VERIFIED_TRUE: verificationForm.isThreatStillExisting === 'Yes',
+          VERIFIED_BY_NAME: verifyingUSer.displayName,
+          VERIFIED_BY_PHONE: verifyingUSer.phoneNumber,
+        },
+      };
+    }
+  }
+
+  return doc;
+}
+
+taskSchema.methods = { ...taskSchema.methods, ...{ addFields, toInform, getStatus, getType, toEbsConnect } };
 
 export const TaskModel = model<TaskDocument, PagedModel<TaskDocument> & SearchableModel<TaskDocument>>(
   'Task',

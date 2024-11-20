@@ -14,6 +14,7 @@ import { resolve } from 'path';
 import { FILE_PATH } from '../../../config/multer';
 import { sync } from 'mkdirp';
 import { Types } from 'mongoose';
+import { TEST_USER_PHONE_NUMBER } from '../../../config/system';
 
 @controller('/v1/task', Auth0Middleware)
 export class TaskController extends BaseHttpController {
@@ -271,93 +272,135 @@ export class TaskController extends BaseHttpController {
 
         const _unit = await this.unitService.findById(roles[0].unit);
 
-        switch (_unit.type) {
-          case 'Community unit':
-            switch (roles[0].spot) {
-              case 'AHA':
+        if (_user.phoneNumber == TEST_USER_PHONE_NUMBER) {
+          let signals: string[] = [];
+          const or: any[] = [{ unit: roles.map((child) => child.unit) }];
+
+          for (const role of roles) {
+            switch (role.spot) {
               case 'CHA':
-                query = {
-                  ...query,
-                  ...{
-                    unit: { $in: roles.map((child) => child.unit) },
-                    signal: { $in: SIGNALS.CEBS },
-                    $or: [{ cebs: { $exists: false } }, { 'cebs.verificationForm': { $exists: false } }],
-                  },
-                };
+                signals = [...signals, ...SIGNALS.CEBS];
+                or.push({ cebs: { $exists: false } }, { 'cebs.verificationForm': { $exists: false } });
+
+              case 'CEBS':
+                signals = [...signals, ...SIGNALS.CEBS];
+                or.push({ 'cebs.verificationForm': { $exists: true } });
+
                 break;
-              default:
-                throw new Error('You do not have any tasks');
-            }
-            break;
+              case 'HEBS':
+                signals = [...signals, ...SIGNALS.HEBS];
+                or.push({ 'hebs.verificationForm': { $exists: true } });
 
-          case 'Health facility':
-            switch (roles[0].spot) {
-              case 'SFP':
-                query = {
-                  ...query,
-                  ...{
-                    unit: { $in: roles.map((child) => child.unit) },
-                    signal: { $in: SIGNALS.HEBS },
-                    $or: [{ hebs: { $exists: false } }, { 'hebs.verificationForm': { $exists: false } }],
-                  },
-                };
                 break;
-              default:
-                throw new Error('You do not have any tasks');
+              case 'LEBS':
+                signals = [...signals, ...SIGNALS.LEBS];
+                or.push({ 'lebs.verificationForm': { $exists: true } });
+
+                break;
+              case 'VEBS':
+                signals = [...signals, ...SIGNALS.VEBS];
+                or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                break;
+              case 'EBS':
+                signals = [...signals, ...SIGNALS.CEBS, ...SIGNALS.HEBS, ...SIGNALS.LEBS, ...SIGNALS.VEBS];
+                or.push({ 'cebs.verificationForm': { $exists: true } });
+                or.push({ 'hebs.verificationForm': { $exists: true } });
+                or.push({ 'lebs.verificationForm': { $exists: true } });
+                or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                break;
             }
-            break;
-
-          case 'Subcounty':
-            let signals: string[] = [];
-            const or: any[] = [{ unit: roles[0].unit }];
-
-            for (const role of roles) {
-              switch (role.spot) {
-                case 'CEBS':
-                  signals = [...signals, ...SIGNALS.CEBS];
-                  or.push({ 'cebs.verificationForm': { $exists: true } });
-
+          }
+        } else {
+          switch (_unit.type) {
+            case 'Community unit':
+              switch (roles[0].spot) {
+                case 'AHA':
+                case 'CHA':
+                  query = {
+                    ...query,
+                    ...{
+                      unit: { $in: roles.map((child) => child.unit) },
+                      signal: { $in: SIGNALS.CEBS },
+                      $or: [{ cebs: { $exists: false } }, { 'cebs.verificationForm': { $exists: false } }],
+                    },
+                  };
                   break;
-                case 'HEBS':
-                  signals = [...signals, ...SIGNALS.HEBS];
-                  or.push({ 'hebs.verificationForm': { $exists: true } });
-
-                  break;
-                case 'LEBS':
-                  signals = [...signals, ...SIGNALS.LEBS];
-                  or.push({ 'lebs.verificationForm': { $exists: true } });
-
-                  break;
-                case 'VEBS':
-                  signals = [...signals, ...SIGNALS.VEBS];
-                  or.push({ 'vebs.verificationForm': { $exists: true } });
-
-                  break;
-                case 'EBS':
-                  signals = [...signals, ...SIGNALS.CEBS, ...SIGNALS.HEBS, ...SIGNALS.LEBS, ...SIGNALS.VEBS];
-                  or.push({ 'cebs.verificationForm': { $exists: true } });
-                  or.push({ 'hebs.verificationForm': { $exists: true } });
-                  or.push({ 'lebs.verificationForm': { $exists: true } });
-                  or.push({ 'vebs.verificationForm': { $exists: true } });
-
-                  break;
+                default:
+                  throw new Error('You do not have any tasks');
               }
-            }
+              break;
 
-            if (or.length === 1) throw new Error('You do not have any roles');
+            case 'Health facility':
+              switch (roles[0].spot) {
+                case 'SFP':
+                  query = {
+                    ...query,
+                    ...{
+                      unit: { $in: roles.map((child) => child.unit) },
+                      signal: { $in: SIGNALS.HEBS },
+                      $or: [{ hebs: { $exists: false } }, { 'hebs.verificationForm': { $exists: false } }],
+                    },
+                  };
+                  break;
+                default:
+                  throw new Error('You do not have any tasks');
+              }
+              break;
 
-            query = {
-              ...query,
-              ...{
-                units: roles[0].unit,
-                signal: { $in: signals },
-                $or: or,
-              },
-            };
+            case 'Subcounty':
+              let signals: string[] = [];
+              const or: any[] = [{ unit: roles[0].unit }];
 
-            break;
-          default:
-            throw new Error('You do not have any tasks');
+              for (const role of roles) {
+                switch (role.spot) {
+                  case 'CEBS':
+                    signals = [...signals, ...SIGNALS.CEBS];
+                    or.push({ 'cebs.verificationForm': { $exists: true } });
+
+                    break;
+                  case 'HEBS':
+                    signals = [...signals, ...SIGNALS.HEBS];
+                    or.push({ 'hebs.verificationForm': { $exists: true } });
+
+                    break;
+                  case 'LEBS':
+                    signals = [...signals, ...SIGNALS.LEBS];
+                    or.push({ 'lebs.verificationForm': { $exists: true } });
+
+                    break;
+                  case 'VEBS':
+                    signals = [...signals, ...SIGNALS.VEBS];
+                    or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                    break;
+                  case 'EBS':
+                    signals = [...signals, ...SIGNALS.CEBS, ...SIGNALS.HEBS, ...SIGNALS.LEBS, ...SIGNALS.VEBS];
+                    or.push({ 'cebs.verificationForm': { $exists: true } });
+                    or.push({ 'hebs.verificationForm': { $exists: true } });
+                    or.push({ 'lebs.verificationForm': { $exists: true } });
+                    or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                    break;
+                }
+              }
+
+              if (or.length === 1) throw new Error('You do not have any roles');
+
+              query = {
+                ...query,
+                ...{
+                  units: roles[0].unit,
+                  signal: { $in: signals },
+                  $or: or,
+                },
+              };
+
+              break;
+            default:
+              throw new Error('You do not have any tasks');
+          }
         }
 
         query = {
@@ -376,6 +419,7 @@ export class TaskController extends BaseHttpController {
               { user },
               { 'pmebs.reportForm.user': user },
               { 'pmebs.requestForm.user': user },
+              { 'pmebs.notifyForm.user': user },
               { 'cebs.verificationForm.user': user },
               { 'cebs.investigationForm.user': user },
               { 'cebs.responseForm.user': user },
@@ -504,91 +548,142 @@ export class TaskController extends BaseHttpController {
 
         const _unit = await this.unitService.findById(roles[0].unit);
 
-        switch (_unit.type) {
-          case 'Community unit':
-            switch (roles[0].spot) {
-              case 'AHA':
+        if (_user.phoneNumber == TEST_USER_PHONE_NUMBER) {
+          let signals: string[] = [];
+          const or: any[] = [{ unit: roles.map((child) => child.unit) }];
+
+          for (const role of roles) {
+            switch (role.spot) {
               case 'CHA':
-                query = {
-                  ...query,
-                  ...{
-                    unit: { $in: roles.map((child) => child.unit) },
-                    signal: { $in: SIGNALS.CEBS },
-                    $or: [{ cebs: { $exists: false } }, { 'cebs.verificationForm': { $exists: false } }],
-                  },
-                };
+                signals = [...signals, ...SIGNALS.CEBS];
+                or.push({ cebs: { $exists: false } }, { 'cebs.verificationForm': { $exists: false } });
+
+              case 'CEBS':
+                signals = [...signals, ...SIGNALS.CEBS];
+                or.push({ 'cebs.verificationForm': { $exists: true } });
+
                 break;
-              default:
-                throw new Error('You do not have any tasks');
-            }
-            break;
-          case 'Health facility':
-            switch (roles[0].spot) {
-              case 'SFP':
-                query = {
-                  ...query,
-                  ...{
-                    unit: { $in: roles.map((child) => child.unit) },
-                    signal: { $in: SIGNALS.HEBS },
-                    $or: [{ hebs: { $exists: false } }, { 'hebs.verificationForm': { $exists: false } }],
-                  },
-                };
+              case 'HEBS':
+                signals = [...signals, ...SIGNALS.HEBS];
+                or.push({ 'hebs.verificationForm': { $exists: true } });
+
                 break;
-              default:
-                throw new Error('You do not have any tasks');
+              case 'LEBS':
+                signals = [...signals, ...SIGNALS.LEBS];
+                or.push({ 'lebs.verificationForm': { $exists: true } });
+
+                break;
+              case 'VEBS':
+                signals = [...signals, ...SIGNALS.VEBS];
+                or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                break;
+              case 'EBS':
+                signals = [...signals, ...SIGNALS.CEBS, ...SIGNALS.HEBS, ...SIGNALS.LEBS, ...SIGNALS.VEBS];
+                or.push({ 'cebs.verificationForm': { $exists: true } });
+                or.push({ 'hebs.verificationForm': { $exists: true } });
+                or.push({ 'lebs.verificationForm': { $exists: true } });
+                or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                break;
             }
-            break;
-          case 'Subcounty':
-            let signals: string[] = [];
-            const or: any[] = [{ unit: roles[0].unit }];
+          }
 
-            for (const role of roles) {
-              switch (role.spot) {
-                case 'CEBS':
-                  signals = [...signals, ...SIGNALS.CEBS];
-                  or.push({ 'cebs.verificationForm': { $exists: true } });
-
+          query = {
+            ...query,
+            ...{
+              units: { $in: roles.map((child) => child.unit) },
+              signal: { $in: signals },
+              $or: or,
+            },
+          };
+        } else {
+          switch (_unit.type) {
+            case 'Community unit':
+              switch (roles[0].spot) {
+                case 'AHA':
+                case 'CHA':
+                  query = {
+                    ...query,
+                    ...{
+                      unit: { $in: roles.map((child) => child.unit) },
+                      signal: { $in: SIGNALS.CEBS },
+                      $or: [{ cebs: { $exists: false } }, { 'cebs.verificationForm': { $exists: false } }],
+                    },
+                  };
                   break;
-                case 'HEBS':
-                  signals = [...signals, ...SIGNALS.HEBS];
-                  or.push({ 'hebs.verificationForm': { $exists: true } });
-
-                  break;
-                case 'LEBS':
-                  signals = [...signals, ...SIGNALS.LEBS];
-                  or.push({ 'lebs.verificationForm': { $exists: true } });
-
-                  break;
-                case 'VEBS':
-                  signals = [...signals, ...SIGNALS.VEBS];
-                  or.push({ 'vebs.verificationForm': { $exists: true } });
-
-                  break;
-                case 'EBS':
-                  signals = [...signals, ...SIGNALS.CEBS, ...SIGNALS.HEBS, ...SIGNALS.LEBS, ...SIGNALS.VEBS];
-                  or.push({ 'cebs.verificationForm': { $exists: true } });
-                  or.push({ 'hebs.verificationForm': { $exists: true } });
-                  or.push({ 'lebs.verificationForm': { $exists: true } });
-                  or.push({ 'vebs.verificationForm': { $exists: true } });
-
-                  break;
+                default:
+                  throw new Error('You do not have any tasks');
               }
-            }
+              break;
+            case 'Health facility':
+              switch (roles[0].spot) {
+                case 'SFP':
+                  query = {
+                    ...query,
+                    ...{
+                      unit: { $in: roles.map((child) => child.unit) },
+                      signal: { $in: SIGNALS.HEBS },
+                      $or: [{ hebs: { $exists: false } }, { 'hebs.verificationForm': { $exists: false } }],
+                    },
+                  };
+                  break;
+                default:
+                  throw new Error('You do not have any tasks');
+              }
+              break;
+            case 'Subcounty':
+              let signals: string[] = [];
+              const or: any[] = [{ unit: roles[0].unit }];
 
-            if (or.length === 1) throw new Error('You do not have any roles');
+              for (const role of roles) {
+                switch (role.spot) {
+                  case 'CEBS':
+                    signals = [...signals, ...SIGNALS.CEBS];
+                    or.push({ 'cebs.verificationForm': { $exists: true } });
 
-            query = {
-              ...query,
-              ...{
-                units: roles[0].unit,
-                signal: { $in: signals },
-                $or: or,
-              },
-            };
+                    break;
+                  case 'HEBS':
+                    signals = [...signals, ...SIGNALS.HEBS];
+                    or.push({ 'hebs.verificationForm': { $exists: true } });
 
-            break;
-          default:
-            throw new Error('You do not have any tasks');
+                    break;
+                  case 'LEBS':
+                    signals = [...signals, ...SIGNALS.LEBS];
+                    or.push({ 'lebs.verificationForm': { $exists: true } });
+
+                    break;
+                  case 'VEBS':
+                    signals = [...signals, ...SIGNALS.VEBS];
+                    or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                    break;
+                  case 'EBS':
+                    signals = [...signals, ...SIGNALS.CEBS, ...SIGNALS.HEBS, ...SIGNALS.LEBS, ...SIGNALS.VEBS];
+                    or.push({ 'cebs.verificationForm': { $exists: true } });
+                    or.push({ 'hebs.verificationForm': { $exists: true } });
+                    or.push({ 'lebs.verificationForm': { $exists: true } });
+                    or.push({ 'vebs.verificationForm': { $exists: true } });
+
+                    break;
+                }
+              }
+
+              if (or.length === 1) throw new Error('You do not have any roles');
+
+              query = {
+                ...query,
+                ...{
+                  units: roles[0].unit,
+                  signal: { $in: signals },
+                  $or: or,
+                },
+              };
+
+              break;
+            default:
+              throw new Error('You do not have any tasks');
+          }
         }
 
         query = {
@@ -607,6 +702,7 @@ export class TaskController extends BaseHttpController {
               { user },
               { 'pmebs.reportForm.user': user },
               { 'pmebs.requestForm.user': user },
+              { 'pmebs.notifyForm.user': user },
               { 'cebs.verificationForm.user': user },
               { 'cebs.investigationForm.user': user },
               { 'cebs.responseForm.user': user },
@@ -672,6 +768,7 @@ export class TaskController extends BaseHttpController {
         { path: 'unit' },
         { path: 'pmebs.reportForm.user' },
         { path: 'pmebs.requestForm.user' },
+        { path: 'pmebs.notifyForm.user' },
         { path: 'cebs.verificationForm.user' },
         { path: 'cebs.investigationForm.user' },
         { path: 'cebs.responseForm.user' },

@@ -37,6 +37,9 @@ import { UnitAnalyticsService } from '../service/analytics/unitAnalytics';
 import { WhatsappService } from '../service/whatsapp/whatsapp';
 import { IncomingWhatsappEventEmitter } from '../event/whatsapp/incomingWhatsapp';
 import { IncomingWhatsappService } from '../service/whatsapp/incomingWhatsapp';
+import { EbsConnectService } from '../service/ebsconnect/ebsconnect';
+
+import { EbsConnectEventEmitter } from '../event/ebsconnect/ebsconnect';
 
 export function getContainer(): Container {
   const container = new Container({ skipBaseClassChecks: true });
@@ -101,6 +104,9 @@ export function getContainer(): Container {
 
   container.bind<IncomingWhatsappEventEmitter>(IncomingWhatsappEventEmitter).to(IncomingWhatsappEventEmitter);
   container.bind<IncomingWhatsappService>(IncomingWhatsappService).to(IncomingWhatsappService);
+
+  container.bind<EbsConnectService>(EbsConnectService).to(EbsConnectService);
+  container.bind<EbsConnectEventEmitter>(EbsConnectEventEmitter).to(EbsConnectEventEmitter);
 
   return container;
 }

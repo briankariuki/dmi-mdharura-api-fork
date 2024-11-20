@@ -10,11 +10,16 @@ import { UserDocument } from '../../model/user/user';
 import { UnitService } from '../unit/unit';
 import { RoleService } from '../user/role';
 import { SIGNALS } from '../../config/signal';
+import { EbsConnectService } from '../ebsconnect/ebsconnect';
+import { QueryPopulateOptions } from 'mongoose';
 
 @injectable()
 export class TaskService {
   @inject(TaskEventEmitter)
   private taskEventEmitter: TaskEventEmitter;
+
+  @inject(EbsConnectService)
+  private ebsConnectService: EbsConnectService;
 
   @inject(SmsService)
   private smsService: SmsService;
@@ -24,6 +29,38 @@ export class TaskService {
 
   @inject(RoleService)
   private roleService: RoleService;
+
+  private taskPopulateFields: QueryPopulateOptions[] = [
+    { path: 'user' },
+    { path: 'unit' },
+    { path: 'pmebs.reportForm.user' },
+    { path: 'pmebs.requestForm.user' },
+    { path: 'pmebs.notifyForm.user' },
+    { path: 'cebs.verificationForm.user' },
+    { path: 'cebs.investigationForm.user' },
+    { path: 'cebs.responseForm.user' },
+    { path: 'cebs.escalationForm.user' },
+    { path: 'cebs.summaryForm.user' },
+    { path: 'cebs.labForm.user' },
+    { path: 'vebs.verificationForm.user' },
+    { path: 'vebs.investigationForm.user' },
+    { path: 'vebs.responseForm.user' },
+    { path: 'vebs.escalationForm.user' },
+    { path: 'vebs.summaryForm.user' },
+    { path: 'vebs.labForm.user' },
+    { path: 'hebs.verificationForm.user' },
+    { path: 'hebs.investigationForm.user' },
+    { path: 'hebs.responseForm.user' },
+    { path: 'hebs.escalationForm.user' },
+    { path: 'hebs.summaryForm.user' },
+    { path: 'hebs.labForm.user' },
+    { path: 'lebs.verificationForm.user' },
+    { path: 'lebs.investigationForm.user' },
+    { path: 'lebs.responseForm.user' },
+    { path: 'lebs.escalationForm.user' },
+    { path: 'lebs.summaryForm.user' },
+    { path: 'lebs.labForm.user' },
+  ];
 
   async create(data: {
     unit: Task['unit'];
@@ -38,38 +75,9 @@ export class TaskService {
 
     this.taskEventEmitter.emit('task-created', task);
 
-    await task
-      .populate([
-        { path: 'user' },
-        { path: 'unit' },
-        { path: 'pmebs.reportForm.user' },
-        { path: 'pmebs.requestForm.user' },
-        { path: 'cebs.verificationForm.user' },
-        { path: 'cebs.investigationForm.user' },
-        { path: 'cebs.responseForm.user' },
-        { path: 'cebs.escalationForm.user' },
-        { path: 'cebs.summaryForm.user' },
-        { path: 'cebs.labForm.user' },
-        { path: 'vebs.verificationForm.user' },
-        { path: 'vebs.investigationForm.user' },
-        { path: 'vebs.responseForm.user' },
-        { path: 'vebs.escalationForm.user' },
-        { path: 'vebs.summaryForm.user' },
-        { path: 'vebs.labForm.user' },
-        { path: 'hebs.verificationForm.user' },
-        { path: 'hebs.investigationForm.user' },
-        { path: 'hebs.responseForm.user' },
-        { path: 'hebs.escalationForm.user' },
-        { path: 'hebs.summaryForm.user' },
-        { path: 'hebs.labForm.user' },
-        { path: 'lebs.verificationForm.user' },
-        { path: 'lebs.investigationForm.user' },
-        { path: 'lebs.responseForm.user' },
-        { path: 'lebs.escalationForm.user' },
-        { path: 'lebs.summaryForm.user' },
-        { path: 'lebs.labForm.user' },
-      ])
-      .execPopulate();
+    await task.populate(this.taskPopulateFields).execPopulate();
+
+    await this.ebsConnectService.sync(task);
 
     return task;
   }
@@ -79,6 +87,7 @@ export class TaskService {
     data: {
       'pmebs.reportForm'?: Task['pmebs']['reportForm'];
       'pmebs.requestForm'?: Task['pmebs']['requestForm'];
+      'pmebs.notifyForm'?: Task['pmebs']['notifyForm'];
       'cebs.verificationForm'?: Task['cebs']['verificationForm'];
       'cebs.investigationForm'?: Task['cebs']['investigationForm'];
       'cebs.responseForm'?: Task['cebs']['responseForm'];
@@ -114,38 +123,9 @@ export class TaskService {
 
     this.taskEventEmitter.emit('task-updated', task);
 
-    await task
-      .populate([
-        { path: 'user' },
-        { path: 'unit' },
-        { path: 'pmebs.reportForm.user' },
-        { path: 'pmebs.requestForm.user' },
-        { path: 'cebs.verificationForm.user' },
-        { path: 'cebs.investigationForm.user' },
-        { path: 'cebs.responseForm.user' },
-        { path: 'cebs.escalationForm.user' },
-        { path: 'cebs.summaryForm.user' },
-        { path: 'cebs.labForm.user' },
-        { path: 'vebs.verificationForm.user' },
-        { path: 'vebs.investigationForm.user' },
-        { path: 'vebs.responseForm.user' },
-        { path: 'vebs.escalationForm.user' },
-        { path: 'vebs.summaryForm.user' },
-        { path: 'vebs.labForm.user' },
-        { path: 'hebs.verificationForm.user' },
-        { path: 'hebs.investigationForm.user' },
-        { path: 'hebs.responseForm.user' },
-        { path: 'hebs.escalationForm.user' },
-        { path: 'hebs.summaryForm.user' },
-        { path: 'hebs.labForm.user' },
-        { path: 'lebs.verificationForm.user' },
-        { path: 'lebs.investigationForm.user' },
-        { path: 'lebs.responseForm.user' },
-        { path: 'lebs.escalationForm.user' },
-        { path: 'lebs.summaryForm.user' },
-        { path: 'lebs.labForm.user' },
-      ])
-      .execPopulate();
+    await task.populate(this.taskPopulateFields).execPopulate();
+
+    await this.ebsConnectService.sync(task);
 
     return task;
   }
@@ -157,38 +137,7 @@ export class TaskService {
 
     this.taskEventEmitter.emit('task-fetched', task);
 
-    await task
-      .populate([
-        { path: 'user' },
-        { path: 'unit' },
-        { path: 'pmebs.reportForm.user' },
-        { path: 'pmebs.requestForm.user' },
-        { path: 'cebs.verificationForm.user' },
-        { path: 'cebs.investigationForm.user' },
-        { path: 'cebs.responseForm.user' },
-        { path: 'cebs.escalationForm.user' },
-        { path: 'cebs.summaryForm.user' },
-        { path: 'cebs.labForm.user' },
-        { path: 'vebs.verificationForm.user' },
-        { path: 'vebs.investigationForm.user' },
-        { path: 'vebs.responseForm.user' },
-        { path: 'vebs.escalationForm.user' },
-        { path: 'vebs.summaryForm.user' },
-        { path: 'vebs.labForm.user' },
-        { path: 'hebs.verificationForm.user' },
-        { path: 'hebs.investigationForm.user' },
-        { path: 'hebs.responseForm.user' },
-        { path: 'hebs.escalationForm.user' },
-        { path: 'hebs.summaryForm.user' },
-        { path: 'hebs.labForm.user' },
-        { path: 'lebs.verificationForm.user' },
-        { path: 'lebs.investigationForm.user' },
-        { path: 'lebs.responseForm.user' },
-        { path: 'lebs.escalationForm.user' },
-        { path: 'lebs.summaryForm.user' },
-        { path: 'lebs.labForm.user' },
-      ])
-      .execPopulate();
+    await task.populate(this.taskPopulateFields).execPopulate();
 
     return task;
   }
@@ -200,38 +149,7 @@ export class TaskService {
 
     this.taskEventEmitter.emit('task-fetched', task);
 
-    await task
-      .populate([
-        { path: 'user' },
-        { path: 'unit' },
-        { path: 'pmebs.reportForm.user' },
-        { path: 'pmebs.requestForm.user' },
-        { path: 'cebs.verificationForm.user' },
-        { path: 'cebs.investigationForm.user' },
-        { path: 'cebs.responseForm.user' },
-        { path: 'cebs.escalationForm.user' },
-        { path: 'cebs.summaryForm.user' },
-        { path: 'cebs.labForm.user' },
-        { path: 'vebs.verificationForm.user' },
-        { path: 'vebs.investigationForm.user' },
-        { path: 'vebs.responseForm.user' },
-        { path: 'vebs.escalationForm.user' },
-        { path: 'vebs.summaryForm.user' },
-        { path: 'vebs.labForm.user' },
-        { path: 'hebs.verificationForm.user' },
-        { path: 'hebs.investigationForm.user' },
-        { path: 'hebs.responseForm.user' },
-        { path: 'hebs.escalationForm.user' },
-        { path: 'hebs.summaryForm.user' },
-        { path: 'hebs.labForm.user' },
-        { path: 'lebs.verificationForm.user' },
-        { path: 'lebs.investigationForm.user' },
-        { path: 'lebs.responseForm.user' },
-        { path: 'lebs.escalationForm.user' },
-        { path: 'lebs.summaryForm.user' },
-        { path: 'lebs.labForm.user' },
-      ])
-      .execPopulate();
+    await task.populate(this.taskPopulateFields).execPopulate();
 
     return task;
   }
@@ -247,38 +165,7 @@ export class TaskService {
 
     this.taskEventEmitter.emit('task-deleted', task);
 
-    await task
-      .populate([
-        { path: 'user' },
-        { path: 'unit' },
-        { path: 'pmebs.reportForm.user' },
-        { path: 'pmebs.requestForm.user' },
-        { path: 'cebs.verificationForm.user' },
-        { path: 'cebs.investigationForm.user' },
-        { path: 'cebs.responseForm.user' },
-        { path: 'cebs.escalationForm.user' },
-        { path: 'cebs.summaryForm.user' },
-        { path: 'cebs.labForm.user' },
-        { path: 'vebs.verificationForm.user' },
-        { path: 'vebs.investigationForm.user' },
-        { path: 'vebs.responseForm.user' },
-        { path: 'vebs.escalationForm.user' },
-        { path: 'vebs.summaryForm.user' },
-        { path: 'vebs.labForm.user' },
-        { path: 'hebs.verificationForm.user' },
-        { path: 'hebs.investigationForm.user' },
-        { path: 'hebs.responseForm.user' },
-        { path: 'hebs.escalationForm.user' },
-        { path: 'hebs.summaryForm.user' },
-        { path: 'hebs.labForm.user' },
-        { path: 'lebs.verificationForm.user' },
-        { path: 'lebs.investigationForm.user' },
-        { path: 'lebs.responseForm.user' },
-        { path: 'lebs.escalationForm.user' },
-        { path: 'lebs.summaryForm.user' },
-        { path: 'lebs.labForm.user' },
-      ])
-      .execPopulate();
+    await task.populate(this.taskPopulateFields).execPopulate();
 
     return task;
   }
