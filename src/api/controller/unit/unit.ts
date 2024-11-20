@@ -7,6 +7,7 @@ import { UserService } from '../../../service/user/user';
 import { Auth0Middleware } from '../../middleware/auth';
 import { TaskService } from '../../../service/task/task';
 import { SIGNALS } from '../../../config/signal';
+import { UnitDocument } from '../../../model/unit/unit';
 
 @controller('/v1/unit', Auth0Middleware)
 export class UnitController extends BaseHttpController {
@@ -115,8 +116,8 @@ export class UnitController extends BaseHttpController {
       return;
     }
 
-    const { sort, page, limit, q, _status, parent, type, signalId, state } = (this.httpContext.request
-      .query as unknown) as QueryParams & {
+    const { sort, page, limit, q, _status, parent, type, signalId, state } = this.httpContext.request
+      .query as unknown as QueryParams & {
       parent: string;
       type: string;
       signalId: string;
@@ -146,7 +147,8 @@ export class UnitController extends BaseHttpController {
 
       query = { ...query, ...{ parent: task.populated('unit') || task.unit } };
 
-      if (SIGNALS.CEBS.includes(task.signal)) query = { ...query, ...{ type: 'Community unit' } };
+      if ((task.unit as unknown as UnitDocument).type === 'County') query = { ...query, ...{ type: 'Subcounty' } };
+      else if (SIGNALS.CEBS.includes(task.signal)) query = { ...query, ...{ type: 'Community unit' } };
       else if (SIGNALS.HEBS.includes(task.signal)) query = { ...query, ...{ type: 'Health facility' } };
       else if (SIGNALS.LEBS.includes(task.signal)) query = { ...query, ...{ type: 'Learning institution' } };
       else if (SIGNALS.VEBS.includes(task.signal)) query = { ...query, ...{ type: 'Veterinary facility' } };

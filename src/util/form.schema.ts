@@ -226,3 +226,36 @@ export const labFormSchema = new Schema(
   },
   { timestamps: true },
 );
+
+export const notifyFormSchema = new Schema(
+  {
+    user: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
+    description: { type: String },
+    unit: { type: Schema.Types.ObjectId, ref: 'Unit' },
+    locality: { type: String },
+    dateReported: { type: Date },
+    dateRequested: { type: Date },
+    via: { type: String, default: 'internet', enum: ['internet', 'sms'] },
+    spot: {
+      type: String,
+      enum: [
+        'HEBS',
+        'LEBS',
+        'CEBS',
+        'EBS',
+        'AHA',
+        'CHA',
+        'CHV',
+        'VEBS',
+        'VET',
+        'SFP',
+        'HCW',
+        'PMEBS',
+        'PEBS/MEBS',
+        'CDR',
+        'VIEWER',
+      ],
+    },
+  },
+  { timestamps: true },
+);

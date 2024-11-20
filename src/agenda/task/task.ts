@@ -10,6 +10,7 @@ import { UnitDocument } from '../../model/unit/unit';
 import { TASK_REMINDER_INTERVAL, TASK_REMINDER_UNITS, TASK_REMINDER_STOP_AFTER } from '../../config/task';
 import { WhatsappService } from '../../service/whatsapp/whatsapp';
 import { TemplateMessage } from '../../types/whatsapp';
+import { FirebaseService } from '../../service/firebase/firebase';
 
 type TaskAgenda = 'task-agenda';
 
@@ -27,6 +28,9 @@ export class TaskAgendaEmitter extends Agenda {
 
   @inject(WhatsappService)
   whatsappService: WhatsappService;
+
+  @inject(FirebaseService)
+  firebaseService: FirebaseService;
 
   constructor() {
     super({
@@ -79,14 +83,15 @@ export class TaskAgendaEmitter extends Agenda {
           if (users.length > 0) {
             const { signalId, signal, user: _user, unit: _unit, createdAt, cebs, hebs, lebs, vebs } = task;
 
-            const user = (_user as unknown) as UserDocument;
+            const user = _user as unknown as UserDocument;
 
-            const unit = (_unit as unknown) as UnitDocument;
+            const unit = _unit as unknown as UnitDocument;
 
             const date = moment.tz(createdAt, moment.tz.zonesForCountry('KE')[0]).format('llll');
 
             let message: string;
-            let template: TemplateMessage;
+            let title: string;
+            let topic: string;
 
             switch (stage) {
               case 'vebs-verification':
@@ -96,33 +101,9 @@ export class TaskAgendaEmitter extends Agenda {
                       unit.name
                     }\nReported by: ${user.displayName} ${user.phoneNumber}\nDated: ${date}`;
 
-                    template = {
-                      name: 'verification_reminder',
-                      language: {
-                        code: 'en',
-                        policy: 'deterministic',
-                      },
-                      components: [
-                        {
-                          type: 'body',
-                          parameters: [
-                            {
-                              type: 'text',
-                              text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                            },
+                    title = `Verification Reminder`;
+                    topic = `${unit.id}`;
 
-                            {
-                              type: 'text',
-                              text: unit.name,
-                            },
-                            {
-                              type: 'text',
-                              text: `${user.displayName} ${user.phoneNumber} on ${date}`,
-                            },
-                          ],
-                        },
-                      ],
-                    };
                     break;
 
                   case 'follow-up':
@@ -130,33 +111,36 @@ export class TaskAgendaEmitter extends Agenda {
                       unit.name
                     }\nReported by: ${user.displayName} ${user.phoneNumber}\nDated: ${date}`;
 
-                    template = {
-                      name: 'verification_follow_up',
-                      language: {
-                        code: 'en',
-                        policy: 'deterministic',
-                      },
-                      components: [
-                        {
-                          type: 'body',
-                          parameters: [
-                            {
-                              type: 'text',
-                              text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                            },
+                    title = `Verification Follow Up`;
+                    topic = `${unit.id}`;
 
-                            {
-                              type: 'text',
-                              text: unit.name,
-                            },
-                            {
-                              type: 'text',
-                              text: `${user.displayName} ${user.phoneNumber} on ${date}`,
-                            },
-                          ],
-                        },
-                      ],
-                    };
+                    // template = {
+                    //   name: 'verification_follow_up',
+                    //   language: {
+                    //     code: 'en',
+                    //     policy: 'deterministic',
+                    //   },
+                    //   components: [
+                    //     {
+                    //       type: 'body',
+                    //       parameters: [
+                    //         {
+                    //           type: 'text',
+                    //           text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
+                    //         },
+
+                    //         {
+                    //           type: 'text',
+                    //           text: unit.name,
+                    //         },
+                    //         {
+                    //           type: 'text',
+                    //           text: `${user.displayName} ${user.phoneNumber} on ${date}`,
+                    //         },
+                    //       ],
+                    //     },
+                    //   ],
+                    // };
                     break;
                 }
                 break;
@@ -165,39 +149,15 @@ export class TaskAgendaEmitter extends Agenda {
                   verificationForm: { user: _vebVerifier },
                 } = vebs;
 
-                const vebVerifier = (_vebVerifier as unknown) as UserDocument;
+                const vebVerifier = _vebVerifier as unknown as UserDocument;
 
                 message = `Please investigate Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nVerified by: ${vebVerifier.displayName} ${vebVerifier.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'investigation_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Investigation`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${vebVerifier.displayName} ${vebVerifier.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'vebs-response':
@@ -205,39 +165,15 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _vebInvestigator },
                 } = vebs;
 
-                const vebInvestigator = (_vebInvestigator as unknown) as UserDocument;
+                const vebInvestigator = _vebInvestigator as unknown as UserDocument;
 
                 message = `Please respond to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${vebInvestigator.displayName} ${vebInvestigator.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'response_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Response`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${vebInvestigator.displayName} ${vebInvestigator.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'vebs-summary':
@@ -245,39 +181,15 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _vebSummarizer },
                 } = vebs;
 
-                const vebSummarizer = (_vebSummarizer as unknown) as UserDocument;
+                const vebSummarizer = _vebSummarizer as unknown as UserDocument;
 
                 message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${vebSummarizer.displayName} ${vebSummarizer.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'summary_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Summary`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${vebSummarizer.displayName} ${vebSummarizer.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'vebs-lab':
@@ -285,7 +197,7 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _vebLabInvestigator },
                 } = vebs;
 
-                const vebLabInvestigator = (_vebLabInvestigator as unknown) as UserDocument;
+                const vebLabInvestigator = _vebLabInvestigator as unknown as UserDocument;
 
                 message = `Please provide the lab results to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
@@ -293,33 +205,9 @@ export class TaskAgendaEmitter extends Agenda {
                   vebLabInvestigator.phoneNumber
                 }\nDated: ${date}`;
 
-                template = {
-                  name: 'lab_results_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Lab Results`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${vebLabInvestigator.displayName} ${vebLabInvestigator.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'vebs-escalation':
@@ -327,39 +215,15 @@ export class TaskAgendaEmitter extends Agenda {
                   responseForm: { user: _vebResponder },
                 } = vebs;
 
-                const vebResponder = (_vebResponder as unknown) as UserDocument;
+                const vebResponder = _vebResponder as unknown as UserDocument;
 
                 message = `Please escalate Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nResponded by: ${vebResponder.displayName} ${vebResponder.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'escalation_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Escalation`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${vebResponder.displayName} ${vebResponder.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'cebs-verification':
@@ -369,33 +233,8 @@ export class TaskAgendaEmitter extends Agenda {
                       unit.name
                     }\nReported by: ${user.displayName} ${user.phoneNumber}\nDated: ${date}`;
 
-                    template = {
-                      name: 'verification_reminder',
-                      language: {
-                        code: 'en',
-                        policy: 'deterministic',
-                      },
-                      components: [
-                        {
-                          type: 'body',
-                          parameters: [
-                            {
-                              type: 'text',
-                              text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                            },
-
-                            {
-                              type: 'text',
-                              text: unit.name,
-                            },
-                            {
-                              type: 'text',
-                              text: `${user.displayName} ${user.phoneNumber} on ${date}`,
-                            },
-                          ],
-                        },
-                      ],
-                    };
+                    title = `Verification Reminder`;
+                    topic = `${unit.id}`;
 
                     break;
                   case 'follow-up':
@@ -403,33 +242,9 @@ export class TaskAgendaEmitter extends Agenda {
                       unit.name
                     }\nReported by: ${user.displayName} ${user.phoneNumber}\nDated: ${date}`;
 
-                    template = {
-                      name: 'verification_follow_up',
-                      language: {
-                        code: 'en',
-                        policy: 'deterministic',
-                      },
-                      components: [
-                        {
-                          type: 'body',
-                          parameters: [
-                            {
-                              type: 'text',
-                              text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                            },
+                    title = `Verification Follow Up`;
+                    topic = `${unit.id}`;
 
-                            {
-                              type: 'text',
-                              text: unit.name,
-                            },
-                            {
-                              type: 'text',
-                              text: `${user.displayName} ${user.phoneNumber} on ${date}`,
-                            },
-                          ],
-                        },
-                      ],
-                    };
                     break;
                 }
 
@@ -440,39 +255,15 @@ export class TaskAgendaEmitter extends Agenda {
                   verificationForm: { user: _cebVerifier },
                 } = cebs;
 
-                const cebVerifier = (_cebVerifier as unknown) as UserDocument;
+                const cebVerifier = _cebVerifier as unknown as UserDocument;
 
                 message = `Please investigate Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nVerified by: ${cebVerifier.displayName} ${cebVerifier.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'investigation_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Investigation`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${cebVerifier.displayName} ${cebVerifier.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'cebs-response':
@@ -480,39 +271,15 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _cebInvestigator },
                 } = cebs;
 
-                const cebInvestigator = (_cebInvestigator as unknown) as UserDocument;
+                const cebInvestigator = _cebInvestigator as unknown as UserDocument;
 
                 message = `Please respond to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${cebInvestigator.displayName} ${cebInvestigator.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'response_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Response`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${cebInvestigator.displayName} ${cebInvestigator.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'cebs-summary':
@@ -520,39 +287,15 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _cebSummarizer },
                 } = cebs;
 
-                const cebSummarizer = (_cebSummarizer as unknown) as UserDocument;
+                const cebSummarizer = _cebSummarizer as unknown as UserDocument;
 
                 message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${cebSummarizer.displayName} ${cebSummarizer.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'summary_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Summary`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${cebSummarizer.displayName} ${cebSummarizer.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'cebs-lab':
@@ -560,7 +303,7 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _cebLabInvestigator },
                 } = cebs;
 
-                const cebLabInvestigator = (_cebLabInvestigator as unknown) as UserDocument;
+                const cebLabInvestigator = _cebLabInvestigator as unknown as UserDocument;
 
                 message = `Please provide the lab results to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
@@ -568,33 +311,9 @@ export class TaskAgendaEmitter extends Agenda {
                   cebLabInvestigator.phoneNumber
                 }\nDated: ${date}`;
 
-                template = {
-                  name: 'lab_results_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Lab Results`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${cebLabInvestigator.displayName} ${cebLabInvestigator.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'cebs-escalation':
@@ -602,39 +321,15 @@ export class TaskAgendaEmitter extends Agenda {
                   responseForm: { user: _cebResponder },
                 } = cebs;
 
-                const cebResponder = (_cebResponder as unknown) as UserDocument;
+                const cebResponder = _cebResponder as unknown as UserDocument;
 
                 message = `Please escalate Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nResponded by: ${cebResponder.displayName} ${cebResponder.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'escalation_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Escalation`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${cebResponder.displayName} ${cebResponder.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'hebs-verification':
@@ -644,33 +339,9 @@ export class TaskAgendaEmitter extends Agenda {
                       unit.name
                     }\nReported by: ${user.displayName} ${user.phoneNumber}\nDated: ${date}`;
 
-                    template = {
-                      name: 'verification_reminder',
-                      language: {
-                        code: 'en',
-                        policy: 'deterministic',
-                      },
-                      components: [
-                        {
-                          type: 'body',
-                          parameters: [
-                            {
-                              type: 'text',
-                              text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                            },
+                    title = `Verification Reminder`;
+                    topic = `${unit.id}`;
 
-                            {
-                              type: 'text',
-                              text: unit.name,
-                            },
-                            {
-                              type: 'text',
-                              text: `${user.displayName} ${user.phoneNumber} on ${date}`,
-                            },
-                          ],
-                        },
-                      ],
-                    };
                     break;
 
                   case 'follow-up':
@@ -678,33 +349,9 @@ export class TaskAgendaEmitter extends Agenda {
                       unit.name
                     }\nReported by: ${user.displayName} ${user.phoneNumber}\nDated: ${date}`;
 
-                    template = {
-                      name: 'verification_follow_up',
-                      language: {
-                        code: 'en',
-                        policy: 'deterministic',
-                      },
-                      components: [
-                        {
-                          type: 'body',
-                          parameters: [
-                            {
-                              type: 'text',
-                              text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                            },
+                    title = `Verification Follow Up`;
+                    topic = `${unit.id}`;
 
-                            {
-                              type: 'text',
-                              text: unit.name,
-                            },
-                            {
-                              type: 'text',
-                              text: `${user.displayName} ${user.phoneNumber} on ${date}`,
-                            },
-                          ],
-                        },
-                      ],
-                    };
                     break;
                 }
                 break;
@@ -714,39 +361,15 @@ export class TaskAgendaEmitter extends Agenda {
                   verificationForm: { user: _hebsVerifier },
                 } = hebs;
 
-                const hebsVerifier = (_hebsVerifier as unknown) as UserDocument;
+                const hebsVerifier = _hebsVerifier as unknown as UserDocument;
 
                 message = `Please investigate Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nVerified by: ${hebsVerifier.displayName} ${hebsVerifier.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'investigation_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Investigation`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${hebsVerifier.displayName} ${hebsVerifier.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'hebs-response':
@@ -754,39 +377,15 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _hebInvestigator },
                 } = hebs;
 
-                const hebInvestigator = (_hebInvestigator as unknown) as UserDocument;
+                const hebInvestigator = _hebInvestigator as unknown as UserDocument;
 
                 message = `Please respond to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${hebInvestigator.displayName} ${hebInvestigator.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'response_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Response`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${hebInvestigator.displayName} ${hebInvestigator.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'hebs-summary':
@@ -794,39 +393,15 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _hebSummarizer },
                 } = hebs;
 
-                const hebSummarizer = (_hebSummarizer as unknown) as UserDocument;
+                const hebSummarizer = _hebSummarizer as unknown as UserDocument;
 
                 message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${hebSummarizer.displayName} ${hebSummarizer.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'summary_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Summary`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${hebSummarizer.displayName} ${hebSummarizer.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'hebs-lab':
@@ -834,7 +409,7 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _hebLabInvestigator },
                 } = hebs;
 
-                const hebLabInvestigator = (_hebLabInvestigator as unknown) as UserDocument;
+                const hebLabInvestigator = _hebLabInvestigator as unknown as UserDocument;
 
                 message = `Please provide the lab results to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
@@ -842,33 +417,9 @@ export class TaskAgendaEmitter extends Agenda {
                   hebLabInvestigator.phoneNumber
                 }\nDated: ${date}`;
 
-                template = {
-                  name: 'lab_results_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Lab Results`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${hebLabInvestigator.displayName} ${hebLabInvestigator.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'hebs-escalation':
@@ -876,39 +427,15 @@ export class TaskAgendaEmitter extends Agenda {
                   responseForm: { user: _hebResponder },
                 } = hebs;
 
-                const hebResponder = (_hebResponder as unknown) as UserDocument;
+                const hebResponder = _hebResponder as unknown as UserDocument;
 
                 message = `Please escalate Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nResponded by: ${hebResponder.displayName} ${hebResponder.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'escalation_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Escalation`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${hebResponder.displayName} ${hebResponder.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'lebs-verification':
@@ -918,33 +445,9 @@ export class TaskAgendaEmitter extends Agenda {
                       unit.name
                     }\nReported by: ${user.displayName} ${user.phoneNumber}\nDated: ${date}`;
 
-                    template = {
-                      name: 'verification_reminder',
-                      language: {
-                        code: 'en',
-                        policy: 'deterministic',
-                      },
-                      components: [
-                        {
-                          type: 'body',
-                          parameters: [
-                            {
-                              type: 'text',
-                              text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                            },
+                    title = `Verification Reminder`;
+                    topic = `${unit.id}`;
 
-                            {
-                              type: 'text',
-                              text: unit.name,
-                            },
-                            {
-                              type: 'text',
-                              text: `${user.displayName} ${user.phoneNumber} on ${date}`,
-                            },
-                          ],
-                        },
-                      ],
-                    };
                     break;
 
                   case 'follow-up':
@@ -952,33 +455,9 @@ export class TaskAgendaEmitter extends Agenda {
                       unit.name
                     }\nReported by: ${user.displayName} ${user.phoneNumber}\nDated: ${date}`;
 
-                    template = {
-                      name: 'verification_follow_up',
-                      language: {
-                        code: 'en',
-                        policy: 'deterministic',
-                      },
-                      components: [
-                        {
-                          type: 'body',
-                          parameters: [
-                            {
-                              type: 'text',
-                              text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                            },
+                    title = `Verification Follow Up`;
+                    topic = `${unit.id}`;
 
-                            {
-                              type: 'text',
-                              text: unit.name,
-                            },
-                            {
-                              type: 'text',
-                              text: `${user.displayName} ${user.phoneNumber} on ${date}`,
-                            },
-                          ],
-                        },
-                      ],
-                    };
                     break;
                 }
                 break;
@@ -988,39 +467,15 @@ export class TaskAgendaEmitter extends Agenda {
                   verificationForm: { user: _lebsVerifier },
                 } = lebs;
 
-                const lebsVerifier = (_lebsVerifier as unknown) as UserDocument;
+                const lebsVerifier = _lebsVerifier as unknown as UserDocument;
 
                 message = `Please investigate Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nVerified by: ${lebsVerifier.displayName} ${lebsVerifier.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'investigation_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Investigation`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${lebsVerifier.displayName} ${lebsVerifier.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'lebs-response':
@@ -1028,39 +483,15 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _lebsInvestigator },
                 } = lebs;
 
-                const lebsInvestigator = (_lebsInvestigator as unknown) as UserDocument;
+                const lebsInvestigator = _lebsInvestigator as unknown as UserDocument;
 
                 message = `Please respond to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${lebsInvestigator.displayName} ${lebsInvestigator.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'response_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Response`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${lebsInvestigator.displayName} ${lebsInvestigator.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
 
               case 'lebs-summary':
@@ -1068,39 +499,15 @@ export class TaskAgendaEmitter extends Agenda {
                   investigationForm: { user: _lebSummarizer },
                 } = lebs;
 
-                const lebSummarizer = (_lebSummarizer as unknown) as UserDocument;
+                const lebSummarizer = _lebSummarizer as unknown as UserDocument;
 
                 message = `Please provide a summary to Signal ID ${signalId}.\nSignal: ${signal.toUpperCase()}\nFrom: ${
                   unit.name
                 }\nInvestigated by: ${lebSummarizer.displayName} ${lebSummarizer.phoneNumber}\nDated: ${date}`;
 
-                template = {
-                  name: 'summary_reminder',
-                  language: {
-                    code: 'en',
-                    policy: 'deterministic',
-                  },
-                  components: [
-                    {
-                      type: 'body',
-                      parameters: [
-                        {
-                          type: 'text',
-                          text: `${signalId}. Signal: ${signal.toUpperCase()}.`,
-                        },
+                title = `Event Summary`;
+                topic = `${unit.id}`;
 
-                        {
-                          type: 'text',
-                          text: unit.name,
-                        },
-                        {
-                          type: 'text',
-                          text: `${lebSummarizer.displayName} ${lebSummarizer.phoneNumber} on ${date}`,
-                        },
-                      ],
-                    },
-                  ],
-                };
                 break;
             }
 
@@ -1110,12 +517,18 @@ export class TaskAgendaEmitter extends Agenda {
               } catch (error) {}
 
               try {
-                await this.whatsappService.send({
-                  to: users.map((user) => user.phoneNumber),
-                  message,
-                  template: template,
-                });
-              } catch (error) {}
+                await this.firebaseService.sendTopicMessage({ topic, message });
+              } catch (error) {
+                console.log(error);
+              }
+
+              // try {
+              //   await this.whatsappService.send({
+              //     to: users.map((user) => user.phoneNumber),
+              //     message,
+              //     template: template,
+              //   });
+              // } catch (error) {}
             }
           }
 
