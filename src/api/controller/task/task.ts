@@ -419,6 +419,7 @@ export class TaskController extends BaseHttpController {
               { user },
               { 'pmebs.reportForm.user': user },
               { 'pmebs.requestForm.user': user },
+              { 'pmebs.notifyForm.user': user },
               { 'cebs.verificationForm.user': user },
               { 'cebs.investigationForm.user': user },
               { 'cebs.responseForm.user': user },
@@ -587,6 +588,15 @@ export class TaskController extends BaseHttpController {
                 break;
             }
           }
+
+          query = {
+            ...query,
+            ...{
+              units: { $in: roles.map((child) => child.unit) },
+              signal: { $in: signals },
+              $or: or,
+            },
+          };
         } else {
           switch (_unit.type) {
             case 'Community unit':
@@ -692,6 +702,7 @@ export class TaskController extends BaseHttpController {
               { user },
               { 'pmebs.reportForm.user': user },
               { 'pmebs.requestForm.user': user },
+              { 'pmebs.notifyForm.user': user },
               { 'cebs.verificationForm.user': user },
               { 'cebs.investigationForm.user': user },
               { 'cebs.responseForm.user': user },
@@ -757,6 +768,7 @@ export class TaskController extends BaseHttpController {
         { path: 'unit' },
         { path: 'pmebs.reportForm.user' },
         { path: 'pmebs.requestForm.user' },
+        { path: 'pmebs.notifyForm.user' },
         { path: 'cebs.verificationForm.user' },
         { path: 'cebs.investigationForm.user' },
         { path: 'cebs.responseForm.user' },

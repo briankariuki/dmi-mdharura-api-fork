@@ -23,6 +23,7 @@ import {
   escalationFormSchema,
   summaryFormSchema,
   labFormSchema,
+  notifyFormSchema,
 } from '../../util/form.schema';
 import { EbsConnectDocument } from '../../types/ebsconnect';
 
@@ -46,6 +47,16 @@ export type Task = {
       spot?: Role['spot'];
     };
     requestForm?: {
+      user: string;
+      description: string;
+      unit: string;
+      locality: string;
+      dateReported: Date;
+      dateRequested: Date;
+      via: 'internet' | 'sms';
+      spot?: Role['spot'];
+    };
+    notifyForm?: {
       user: string;
       description: string;
       unit: string;
@@ -94,7 +105,6 @@ export type Task = {
       isStillHappening: string;
       isReportedBefore: string;
       dateSCDSCInformed: Date;
-
       via: 'internet' | 'sms';
       spot?: Role['spot'];
     };
@@ -305,6 +315,7 @@ const taskSchema = new Schema(
           },
           { timestamps: true },
         ),
+        notifyForm: notifyFormSchema,
       },
       { timestamps: true },
     ),

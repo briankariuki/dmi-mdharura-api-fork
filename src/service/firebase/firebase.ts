@@ -32,6 +32,29 @@ export class FirebaseService {
     });
   }
 
+  async sendTopicMessage(data: { topic: string; message: string; route?: string }): Promise<void> {
+    const { topic, message, route } = data;
+
+    await getMessaging(this.admin).send({
+      topic: topic,
+      notification: {
+        title: PROJECT_NAME,
+        body: message,
+      },
+      data: {
+        click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        route: route ?? '/tasks',
+      },
+
+      //     "data": {
+      //   "click_action": "FLUTTER_NOTIFICATION_CLICK",
+      //   "sound": "default",
+      //   "status": "done",
+      //   "screen": "screenA",
+      // },
+    });
+  }
+
   async getUser(uid: string): Promise<{ displayName: string; email: string; phoneNumber: string; photoURL: string }> {
     const response = await getAuth(this.admin).getUser(uid);
 

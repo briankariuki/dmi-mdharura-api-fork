@@ -43,7 +43,6 @@ export class EbsConnectEventEmitter extends EventEmitter {
           $or: [
             {
               // uid: { $eq: doc.UNIT_CODE },
-
               code: { $eq: doc.UNIT_CODE },
             },
             {

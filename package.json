@@ -68,7 +68,7 @@
     "express": "^4.19.2",
     "ffmpeg": "^0.0.4",
     "file-type": "^16.1.0",
-    "firebase-admin": "^12.1.1",
+    "firebase-admin": "^12.7.0",
     "image-size": "^1.1.1",
     "inversify": "^6.0.2",
     "inversify-express-utils": "^6.4.6",
